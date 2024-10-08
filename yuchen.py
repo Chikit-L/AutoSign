@@ -1,10 +1,18 @@
 #原地址https://github.com/superHao2000/autoCheck/blob/5c7f3121b4cae435e6754cb5d21998359f0a416c/checkin/yuchen.py
+
+#!/usr/bin/env bash
+# cron:0-59 8 * * *
+# new Env("雨晨ios资源自动签到")
+
+
 import os
 import requests
 from bs4 import BeautifulSoup
 from utils.logger import log
 from utils.util import LoginResultHandler
 from utils.util import sleep_random
+
+
 
 name = "雨晨ios资源"
 
