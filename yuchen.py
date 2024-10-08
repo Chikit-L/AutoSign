@@ -1,18 +1,13 @@
-#原地址https://github.com/superHao2000/autoCheck/blob/5c7f3121b4cae435e6754cb5d21998359f0a416c/checkin/yuchen.py
-
-#!/usr/bin/env bash
-# cron:0-59 8 * * *
-# new Env("雨晨ios资源自动签到")
-
-
 import os
 import requests
 from bs4 import BeautifulSoup
-from utils.logger import log
-from utils.util import LoginResultHandler
-from utils.util import sleep_random
+import logging
+import time
+import random
 
-
+# 配置日志记录
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
 
 name = "雨晨ios资源"
 
@@ -71,10 +66,10 @@ class YuChen:
         headers = self.headers()
         response = self.session.post(url=url, data=data, headers=headers)
         log.debug(response.json())
-        message = LoginResultHandler(response.json())
-        if message.success == "error":
+        message = self.login_result_handler(response.json())
+        if message['success'] == "error":
             log.info("登录失败")
-            log.info(message.msg)
+            log.info(message['msg'])
             return False
         return True
 
@@ -89,9 +84,9 @@ class YuChen:
         headers = self.headers()
         response = self.session.post(url=url, data=data, headers=headers)
         log.debug(response.json())
-        message = LoginResultHandler(response.json())
-        log.info(message.msg)
-        return message.msg  # 返回签到结果
+        message = self.login_result_handler(response.json())
+        log.info(message['msg'])
+        return message['msg']  # 返回签到结果
 
     def yuchen_info(self):
         """
@@ -121,6 +116,12 @@ class YuChen:
             return sign_result, credit_info
         return None, None
 
+    def login_result_handler(self, response_json):
+        """
+        处理登录结果的简易函数
+        """
+        return response_json
+
 
 def push_to_server_chan(title, message):
     """推送签到信息到Server酱"""
@@ -138,6 +139,13 @@ def push_to_server_chan(title, message):
         log.info("消息推送成功")
     else:
         log.info(f"消息推送失败，状态码: {response.status_code}")
+
+
+def sleep_random():
+    """随机暂停一段时间，模拟人为操作"""
+    sleep_time = random.randint(1, 10)
+    log.info(f"随机暂停 {sleep_time} 秒")
+    time.sleep(sleep_time)
 
 
 def main():
