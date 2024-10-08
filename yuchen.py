@@ -1,3 +1,7 @@
+#!/usr/bin/env bash
+# cron:0-59 8 * * *
+# new Env("雨晨ios资源自动签到")
+
 import os
 import requests
 from bs4 import BeautifulSoup
