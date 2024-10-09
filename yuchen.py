@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# cron:0-59 8 * * *
+# cron:0 8 * * *
 # new Env("雨晨ios资源自动签到")
 
 import os
