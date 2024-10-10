@@ -4,27 +4,6 @@
 
 const axios = require('axios');
 const qs = require('qs');
-const { execSync } = require('child_process');
-
-// 检查依赖是否已安装，如果没有则安装依赖
-function checkAndInstallDependencies() {
-  try {
-    require.resolve('axios');
-    require.resolve('qs');
-  } catch (e) {
-    console.log("检测到缺失依赖，正在安装依赖...");
-    try {
-      execSync('npm install axios qs', { stdio: 'inherit' });
-      console.log("依赖安装完成。");
-    } catch (error) {
-      console.error("❌ 依赖安装失败：", error);
-      process.exit(1);
-    }
-  }
-}
-
-// 执行依赖检测和安装
-checkAndInstallDependencies();
 
 // 从环境变量中获取账号和密码
 const username = process.env.HXSY_USERNAME;  // 账号
@@ -113,3 +92,4 @@ function parseCookie(setCookie) {
   });
   return cookie.trim();
 }
+
