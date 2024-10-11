@@ -5,12 +5,18 @@
 import os
 import time
 import random
+import logging
+import shutil
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, WebDriverException
+
+# 设置日志
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # 从环境变量中获取用户名和密码
 username = os.getenv("FLIGGY_USERNAME")
@@ -31,18 +37,27 @@ def human_type(element, text):
 
 def sign_in_fliggy():
     try:
-        # 配置 Chrome 的无头模式（本地调试时可注释掉无头模式）
+        # 查找 chromedriver 路径
+        chromedriver_path = shutil.which("chromedriver")
+        if not chromedriver_path:
+            logging.error("未找到 chromedriver，请确保它已安装并在 PATH 中。")
+            return False
+
+        # 配置 Chrome 的无头模式
         chrome_options = Options()
         chrome_options.add_argument("--headless") 
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--window-size=1920x1080")
 
         # 反检测Selenium
         chrome_options.add_experimental_option('excludeSwitches', ['enable-automation'])
         chrome_options.add_experimental_option('useAutomationExtension', False)
 
         # 启动浏览器
-        driver = webdriver.Chrome(options=chrome_options)
+        service = Service(chromedriver_path)
+        driver = webdriver.Chrome(service=service, options=chrome_options)
 
         # 修改navigator.webdriver属性以避免检测
         driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
@@ -65,9 +80,9 @@ def sign_in_fliggy():
                 EC.element_to_be_clickable((By.XPATH, '//*[@id="login-form"]/div[6]/a'))
             )
             element.click()
-            print("点击帐号密码登录成功")
+            logging.info("点击帐号密码登录成功")
         except Exception as e:
-            print(f"点击失败: {e}")
+            logging.error(f"点击失败: {e}")
             return False
 
         # 输入用户名
@@ -77,12 +92,12 @@ def sign_in_fliggy():
             )
             username_field.clear()
             human_type(username_field, username)
-            print("用户名输入成功")
+            logging.info("用户名输入成功")
         except TimeoutException:
-            print("用户名输入框没有在指定时间内出现。")
+            logging.error("用户名输入框没有在指定时间内出现。")
             return False
         except Exception as e:
-            print(f"输入用户名失败: {e}")
+            logging.error(f"输入用户名失败: {e}")
             return False
 
         # 随机延迟以模拟打字的自然行为
@@ -95,24 +110,31 @@ def sign_in_fliggy():
             )
             password_field.clear()
             human_type(password_field, password)
-            print("密码输入成功")
+            logging.info("密码输入成功")
         except TimeoutException:
-            print("密码输入框没有在指定时间内出现。")
+            logging.error("密码输入框没有在指定时间内出现。")
             return False
         except Exception as e:
-            print(f"输入密码失败: {e}")
+            logging.error(f"输入密码失败: {e}")
             return False
 
         # 同意协议
         try:
             label = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, '//label[@for="fm-agreement-checkbox"]'))
+                EC.visibility_of_element_located((By.XPATH, '//label[@for="fm-agreement-checkbox"]'))
             )
-            label.click()
-            print("同意协议成功")
+            
+            # 确保目标元素没有被其他元素遮挡
+            driver.execute_script("arguments[0].scrollIntoView(true);", label)
+            random_sleep(0.5, 1)  # 等待片刻
+
+            # 使用 JavaScript 点击
+            driver.execute_script("arguments[0].click();", label)
+            logging.info("同意协议成功")
         except Exception as e:
-            print(f"点击同意协议失败: {e}")
+            logging.error(f"点击同意协议失败: {e}")
             return False
+
 
         # 随机延迟模拟用户思考
         random_sleep(2, 4)
@@ -123,25 +145,27 @@ def sign_in_fliggy():
                 EC.element_to_be_clickable((By.XPATH, '//button[@type="submit" and contains(@class, "fm-submit")]'))
             )
             driver.execute_script("arguments[0].click();", login_button)
-            print("登录按钮点击成功，登录中...")
+            logging.info("登录按钮点击成功，登录中...")
         except TimeoutException:
-            print("登录按钮没有在指定时间内出现。")
+            logging.error("登录按钮没有在指定时间内出现。")
             return False
         except Exception as e:
-            print(f"点击登录按钮失败: {e}")
+            logging.error(f"点击登录按钮失败: {e}")
             return False
 
-        print("登录完成，准备执行任务")
+        logging.info("登录完成，准备执行任务")
 
         # 调用任务处理函数
         return complete_task(driver)
 
-    except Exception as e:
-        print(f"出现错误: {e}")
+    except WebDriverException as e:
+        logging.error(f"WebDriver 错误: {e}")
         return False
-
+    except Exception as e:
+        logging.error(f"出现错误: {e}")
+        return False
     finally:
-        if driver:
+        if 'driver' in locals():
             driver.quit()
 
 def complete_task(driver):
@@ -157,34 +181,34 @@ def complete_task(driver):
 
         # 使用JavaScript执行点击
         driver.execute_script("arguments[0].click();", sign_in_button)
-        print("签到按钮点击成功，正在完成签到...")
+        logging.info("签到按钮点击成功，正在完成签到...")
 
         # 等待5秒后再次点击，以确保点击成功
         random_sleep(5, 6)
         driver.execute_script("arguments[0].click();", sign_in_button)
-        print("再次点击签到按钮，确保签到成功...")
+        logging.info("再次点击签到按钮，确保签到成功...")
         return True
 
     except TimeoutException:
-        print("签到按钮没有在指定时间内出现，可能加载时间较长或未加载。")
+        logging.error("签到按钮没有在指定时间内出现，可能加载时间较长或未加载。")
         return False
     except Exception as e:
-        print(f"点击签到按钮失败: {e}")
+        logging.error(f"点击签到按钮失败: {e}")
         return False
 
 # 重试逻辑，最多重试3次
 def retry_sign_in(retry_count=3):
     attempt = 0
     while attempt < retry_count:
-        print(f"开始第 {attempt + 1} 次尝试...")
+        logging.info(f"开始第 {attempt + 1} 次尝试...")
         if sign_in_fliggy():
-            print("签到成功！")
+            logging.info("签到成功！")
             return True
         else:
-            print("本次签到失败，等待30秒后重试...")
+            logging.info("本次签到失败，等待30秒后重试...")
             time.sleep(30)
             attempt += 1
-    print("全部尝试均失败，签到失败。")
+    logging.error("全部尝试均失败，签到失败。")
     return False
 
 # 执行签到流程，最多重试三次
