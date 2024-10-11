@@ -1,7 +1,7 @@
 # 青龙签到脚本，cookie请填写到环境变量“yysub_cookie”
 #!/usr/bin/env bash
 # cron:0 9 * * *
-# new Env("人人字幕组")
+# new Env("人人字幕组签到")
 
 import os
 import requests
