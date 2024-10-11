@@ -2,10 +2,15 @@
 # cron:0 9 * * *
 # new Env("好时充签到")
 
+
 import os
 import requests
 import json
 import time
+import sys
+
+# Import the notify.py
+from notify import send  # Import send function
 
 # 请求的 URL
 url = 'http://user.123sunny.com/Wechat.php/Client/UserInfo/checkin'
@@ -34,6 +39,9 @@ data = {}
 max_retries = 3
 retry_count = 0
 
+# 最终的消息变量，用于在最后推送
+final_message = ""
+
 while retry_count < max_retries:
     try:
         # 发起 POST 请求
@@ -47,23 +55,32 @@ while retry_count < max_retries:
                 gain = result['score']['gain']  # 今天获得的积分
                 processed = result['score']['processed']  # 总积分
 
-                # 输出签到结果
-                print(f"签到成功！\n今天签到获得 {gain} 积分，总积分为 {processed}分")
+                # 构建最终成功消息
+                final_message = f"签到成功！\n今天签到获得 {gain} 积分，总积分为 {processed}分"
+                print(final_message)
                 break  # 签到成功，退出循环
             else:
-                print("签到失败，返回信息:", result)
+                final_message = f"签到失败，返回信息: {result}"
+                print(final_message)
         else:
-            print("签到请求失败，状态码：", response.status_code)
+            final_message = f"签到请求失败，状态码：{response.status_code}"
+            print(final_message)
 
     except Exception as e:
-        print("请求过程中出现错误：", str(e))
+        final_message = f"请求过程中出现错误：{str(e)}"
+        print(final_message)
 
     # 增加重试次数
     retry_count += 1
 
-    if retry_count < max_retries:
-        # 等待 30 秒后重试
+    if retry_count > max_retries:
+        # 等待 30 秒后重试，不推送重试信息
         print(f"重试 {retry_count}/{max_retries}，等待 30 秒后再次尝试...")
         time.sleep(30)
     else:
-        print("已达到最大重试次数，签到失败。")
+        final_message = "已达到最大重试次数，签到失败。"
+        print(final_message)
+
+# 仅在最后推送最终的签到结果
+if final_message:
+    send("好时充签到", final_message)

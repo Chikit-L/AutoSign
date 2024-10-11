@@ -3,9 +3,11 @@
 # cron:0 9 * * *
 # new Env("人人字幕组签到")
 
+
 import os
 import requests
 import time
+from notify import send  # Import the notification function
 
 # 请求用户信息的URL
 url = "https://www.yysub.net/user/login/getCurUserTopInfo"
@@ -32,12 +34,26 @@ def get_user_info(retry_count=3):
                 # 提取需要的信息
                 nickname = data['data']['userinfo']['nickname']
                 cont_login = data['data']['usercount']['cont_login']
-                print(f"用户 {nickname} 已连续登陆 {cont_login} 天")
+                message = f"用户 {nickname} 已连续登陆 {cont_login} 天"
+                print(message)
+
+                # Call the notification function
+                send("人人字幕组签到", message)
+
                 break
             else:
-                print(f"请求失败，状态码: {response.status_code}")
+                error_message = f"请求失败，状态码: {response.status_code}"
+                print(error_message)
+
+                # Notify about the failure
+                send("人人字幕组签到失败", error_message)
+
         except Exception as e:
-            print(f"发生错误: {str(e)}")
+            error_message = f"发生错误: {str(e)}"
+            print(error_message)
+
+            # Notify about the error
+            send("人人字幕组签到异常", error_message)
 
         retry_count -= 1
         if retry_count > 0:
@@ -45,6 +61,7 @@ def get_user_info(retry_count=3):
             time.sleep(2)  # 等待2秒后重试
         else:
             print("请求失败，已达到最大重试次数。")
+            send("人人字幕组签到失败", "请求失败，已达到最大重试次数。")
 
 # 执行签到操作
 if __name__ == "__main__":

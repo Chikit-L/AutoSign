@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 import logging
 import time
 import random
+from notify import send  # Import the send function from notify.py
 
 # 配置日志记录
 logging.basicConfig(level=logging.INFO)
@@ -127,24 +128,6 @@ class YuChen:
         return response_json
 
 
-def push_to_server_chan(title, message):
-    """推送签到信息到Server酱"""
-    push_key = os.getenv('PUSH_KEY')
-    if not push_key:
-        log.info("没有找到Server酱 PUSH_KEY，跳过推送")
-        return
-    push_url = f"https://sctapi.ftqq.com/{push_key}.send"
-    data = {
-        "title": title,
-        "desp": message
-    }
-    response = requests.post(push_url, data=data)
-    if response.status_code == 200:
-        log.info("消息推送成功")
-    else:
-        log.info(f"消息推送失败，状态码: {response.status_code}")
-
-
 def sleep_random():
     """随机暂停一段时间，模拟人为操作"""
     sleep_time = random.randint(1, 10)
@@ -161,10 +144,10 @@ def main():
             if sign_result and credit_info:
                 # 签到成功后推送信息
                 message = f"签到结果: {sign_result}\n积分信息: {credit_info}"
-                push_to_server_chan(f"{name}签到成功", message)
+                send(f"{name}签到成功", message)  # Use notify.py's send function
         except Exception as e:
             log.info(f"签到失败: {e}")
-            push_to_server_chan(f"{name}签到失败", str(e))
+            send(f"{name}签到失败", str(e))  # Use notify.py's send function
         sleep_random()
 
 

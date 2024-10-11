@@ -4,13 +4,14 @@
 
 const axios = require('axios');
 const qs = require('qs');
+const { exec } = require('child_process');  // 用来执行 Python 脚本
 
 // 从环境变量中获取账号和密码
 const username = process.env.HXSY_USERNAME;  // 账号
 const password = process.env.HXSY_PASSWORD;  // 密码
 
 if (!username || !password) {
-  console.log("未设置账号或密码，请在环境变量中设置HXSY_USERNAME和HXSY_PASSWORD");
+  notify("花夏数娱签到脚本", "未设置账号或密码，请在环境变量中设置HXSY_USERNAME和HXSY_PASSWORD");
   return;
 }
 
@@ -28,7 +29,7 @@ const loginBody = qs.stringify({
       await signIn(cookie);
     }
   } catch (error) {
-    console.error("脚本执行出错：", error);
+    notify("花夏数娱签到脚本", `脚本执行出错：${error.message}`);
   }
 })();
 
@@ -47,15 +48,15 @@ async function login() {
     const response = await axios(options);
     const setCookie = response.headers['set-cookie'];
     if (response.data.status == 1) {
-      console.log("🎉 登录成功: " + response.data.msg);
+      notify("花夏数娱签到脚本", `🎉 登录成功: ${response.data.msg}`);
       const cookie = parseCookie(setCookie);
       return cookie;
     } else {
-      console.log("🔴 登录失败: " + response.data.msg);
+      notify("花夏数娱签到脚本", `🔴 登录失败: ${response.data.msg}`);
       return null;
     }
   } catch (error) {
-    console.error("❌ 登录错误：", error);
+    notify("花夏数娱签到脚本", `❌ 登录错误：${error.message}`);
     return null;
   }
 }
@@ -74,14 +75,14 @@ async function signIn(cookie) {
 
   try {
     const response = await axios(options);
-    console.log("🟢 正在签到...");
+    notify("花夏数娱签到脚本", "🟢 正在签到...");
     if (response.data.status == 1) {
-      console.log("🎉 签到成功: " + response.data.msg);
+      notify("花夏数娱签到脚本", `🎉 签到成功: ${response.data.msg}`);
     } else {
-      console.log("🔴 签到失败: " + response.data.msg);
+      notify("花夏数娱签到脚本", `🔴 签到失败: ${response.data.msg}`);
     }
   } catch (error) {
-    console.error("❌ 签到错误：", error);
+    notify("花夏数娱签到脚本", `❌ 签到错误：${error.message}`);
   }
 }
 
@@ -93,3 +94,18 @@ function parseCookie(setCookie) {
   return cookie.trim();
 }
 
+// 调用 Python notify.py 中的 send 函数进行通知
+function notify(title, content) {
+  const command = `python3 /path/to/notify.py "${title}" "${content}"`;
+  exec(command, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`通知失败: ${error.message}`);
+      return;
+    }
+    if (stderr) {
+      console.error(`通知错误: ${stderr}`);
+      return;
+    }
+    console.log(`通知结果: ${stdout}`);
+  });
+}
