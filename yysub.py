@@ -1,13 +1,11 @@
-# 青龙签到脚本，cookie请填写到环境变量“yysub_cookie”
 #!/usr/bin/env bash
 # cron:0 9 * * *
 # new Env("人人字幕组签到")
 
-
 import os
 import requests
 import time
-from notify import send  # Import the notification function
+from notify import send  # 导入通知函数
 
 # 请求用户信息的URL
 url = "https://www.yysub.net/user/login/getCurUserTopInfo"
@@ -36,33 +34,27 @@ def get_user_info(retry_count=3):
                 cont_login = data['data']['usercount']['cont_login']
                 message = f"用户 {nickname} 已连续登陆 {cont_login} 天"
                 print(message)
+                return message  # 成功时返回消息
 
-                # Call the notification function
-                send("人人字幕组签到", message)
-
-                break
             else:
-                error_message = f"请求失败，状态码: {response.status_code}"
-                print(error_message)
-
-                # Notify about the failure
-                send("人人字幕组签到失败", error_message)
+                print(f"请求失败，状态码: {response.status_code}")
 
         except Exception as e:
-            error_message = f"发生错误: {str(e)}"
-            print(error_message)
-
-            # Notify about the error
-            send("人人字幕组签到异常", error_message)
+            print(f"发生错误: {str(e)}")
 
         retry_count -= 1
         if retry_count > 0:
             print(f"重试中... 剩余重试次数: {retry_count}")
             time.sleep(2)  # 等待2秒后重试
-        else:
-            print("请求失败，已达到最大重试次数。")
-            send("人人字幕组签到失败", "请求失败，已达到最大重试次数。")
+
+    return None  # 如果重试次数用尽，返回 None
 
 # 执行签到操作
 if __name__ == "__main__":
-    get_user_info()
+    result_message = get_user_info()
+
+    # 根据结果发送不同的通知
+    if result_message:
+        send("人人字幕组签到成功", result_message)  # 成功时发送签到结果
+    else:
+        send("人人字幕组签到失败", "签到失败，无法获取用户信息。")  # 失败时发送简单失败消息
