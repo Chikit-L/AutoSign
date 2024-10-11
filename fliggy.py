@@ -51,13 +51,14 @@ def sign_in_fliggy():
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--window-size=1920x1080")
 
+        # 反检测Selenium
+        chrome_options.add_experimental_option('excludeSwitches', ['enable-automation'])
+        chrome_options.add_experimental_option('useAutomationExtension', False)
+
         # 启动浏览器
         service = Service(chromedriver_path)
         driver = webdriver.Chrome(service=service, options=chrome_options)
 
-        # 反检测Selenium
-        chrome_options.add_experimental_option('excludeSwitches', ['enable-automation'])
-        chrome_options.add_experimental_option('useAutomationExtension', False)
 
         # 修改navigator.webdriver属性以避免检测
         driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
