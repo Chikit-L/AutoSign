@@ -25,15 +25,18 @@ password = os.getenv("FLIGGY_PASSWORD")
 # 最初的里程中心页面链接
 mileage_page_url = "https://outfliggys.m.taobao.com/app/trip/rx-mileage2024/pages/home?disableNav=YES&titleBarHidden=2&__webview_options__=fullscreen%3DYES&spm=181.29007744.0.0&pre_pageVersion=1.0.44&fpt=ftuid(pv9s5IVT176286.2)&_projVer=1.0.22"
 
+
 def random_sleep(min_time=1, max_time=3):
     """在 min_time 和 max_time 之间随机等待时间，模拟用户的随机行为"""
     time.sleep(random.uniform(min_time, max_time))
+
 
 def human_type(element, text):
     """逐个字符输入，模拟人类打字"""
     for char in text:
         element.send_keys(char)
         random_sleep(0.1, 0.3)  # 每个字符输入间隔随机
+
 
 def sign_in_fliggy():
     try:
@@ -45,7 +48,7 @@ def sign_in_fliggy():
 
         # 配置 Chrome 的无头模式
         chrome_options = Options()
-        chrome_options.add_argument("--headless") 
+        chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--disable-gpu")
@@ -58,7 +61,6 @@ def sign_in_fliggy():
         # 启动浏览器
         service = Service(chromedriver_path)
         driver = webdriver.Chrome(service=service, options=chrome_options)
-
 
         # 修改navigator.webdriver属性以避免检测
         driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
@@ -124,7 +126,7 @@ def sign_in_fliggy():
             label = WebDriverWait(driver, 10).until(
                 EC.visibility_of_element_located((By.XPATH, '//label[@for="fm-agreement-checkbox"]'))
             )
-            
+
             # 确保目标元素没有被其他元素遮挡
             driver.execute_script("arguments[0].scrollIntoView(true);", label)
             random_sleep(0.5, 1)  # 等待片刻
@@ -135,7 +137,6 @@ def sign_in_fliggy():
         except Exception as e:
             logging.error(f"点击同意协议失败: {e}")
             return False
-
 
         # 随机延迟模拟用户思考
         random_sleep(2, 4)
@@ -169,6 +170,7 @@ def sign_in_fliggy():
         if 'driver' in locals():
             driver.quit()
 
+
 def complete_task(driver):
     try:
         # 添加等待时间，确保页面完全加载
@@ -197,6 +199,7 @@ def complete_task(driver):
         logging.error(f"点击签到按钮失败: {e}")
         return False
 
+
 # 重试逻辑，最多重试3次
 def retry_sign_in(retry_count=3):
     attempt = 0
@@ -211,6 +214,7 @@ def retry_sign_in(retry_count=3):
             attempt += 1
     logging.error("全部尝试均失败，签到失败。")
     return False
+
 
 # 执行签到流程，最多重试三次
 retry_sign_in()

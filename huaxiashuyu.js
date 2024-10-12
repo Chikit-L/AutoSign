@@ -94,9 +94,9 @@ function parseCookie(setCookie) {
   return cookie.trim();
 }
 
-// 调用 Python notify.py 中的 send 函数进行通知
+// 修改 notify 函数，使用 notify.py 中的 send
 function notify(title, content) {
-  const command = `python3 /path/to/notify.py "${title}" "${content}"`;
+  const command = `python3 /path/to/notify.py -c "from notify import send; send('${title}', '${content}')"`;
   exec(command, (error, stdout, stderr) => {
     if (error) {
       console.error(`通知失败: ${error.message}`);
@@ -109,3 +109,4 @@ function notify(title, content) {
     console.log(`通知结果: ${stdout}`);
   });
 }
+
