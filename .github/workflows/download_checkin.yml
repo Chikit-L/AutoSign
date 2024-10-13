@@ -1,28 +1,30 @@
-name: Download Quark Check-In Script
+name: download_script
 
 on:
   schedule:
-    # 定期运行任务（此处设置为每天凌晨2点）
-    - cron: '0 2 * * *'
-  workflow_dispatch:
-    # 手动触发工作流
+    - cron: '0 0 * * 0'  # 每周更新一次
 
 jobs:
-  download_script:
+  update-checkin-script:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # 使用 Secrets 中的 Token
+          submodules: recursive  # 更新子模块
 
-    - name: Download checkIn_Quark.py
-      run: |
-        curl -o checkIn_Quark.py https://raw.githubusercontent.com/BNDou/Auto_Check_In/main/checkIn_Quark.py
+      - name: Download checkIn_Quark.py
+        run: |
+          cp submodules/Auto_Check_In/checkIn_Quark.py ./checkIn_Quark.py
 
-    - name: Commit and push changes
-      run: |
-        git config --local user.email "your-email@example.com"
-        git config --local user.name "your-github-username"
-        git add checkIn_Quark.py
-        git commit -m "Update checkIn_Quark.py"
-        git push
+      - name: Commit and push changes
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git add checkIn_Quark.py
+          git commit -m "Update checkIn_Quark.py"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
