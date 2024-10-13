@@ -1,0 +1,28 @@
+name: Download Quark Check-In Script
+
+on:
+  schedule:
+    # 定期运行任务（此处设置为每天凌晨2点）
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    # 手动触发工作流
+
+jobs:
+  download_script:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Download checkIn_Quark.py
+      run: |
+        curl -o checkIn_Quark.py https://raw.githubusercontent.com/BNDou/Auto_Check_In/main/checkIn_Quark.py
+
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "your-email@example.com"
+        git config --local user.name "your-github-username"
+        git add checkIn_Quark.py
+        git commit -m "Update checkIn_Quark.py"
+        git push
