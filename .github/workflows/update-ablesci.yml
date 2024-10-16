@@ -1,0 +1,31 @@
+name: Update ablesci.py
+
+# 定期触发，每天凌晨 1 点自动运行
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  update-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: 检出你的 AutoSign 仓库
+      - name: Checkout AutoSign repo
+        uses: actions/checkout@v2
+
+      # Step 2: 从源仓库拉取 ablesci.py 文件
+      - name: Download ablesci.py from ablesciSign
+        run: |
+          # 使用 curl 下载文件到目标路径
+          curl -o ablesci/ablesci.py https://raw.githubusercontent.com/chenlunTian/ablesciSign/main/ablesci.py
+
+      # Step 3: 提交更新到你的仓库
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add ablesci/ablesci.py
+          git commit -m "Update ablesci.py from ablesciSign"
+          git push origin main
