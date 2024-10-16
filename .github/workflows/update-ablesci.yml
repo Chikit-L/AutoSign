@@ -1,4 +1,4 @@
-name: Update ablesci.py
+name: Update or Add ablesci.py
 
 # 定期触发，每天凌晨 1 点自动运行
 on:
@@ -15,17 +15,31 @@ jobs:
       - name: Checkout AutoSign repo
         uses: actions/checkout@v2
 
-      # Step 2: 从源仓库拉取 ablesci.py 文件
-      - name: Download ablesci.py from ablesciSign
+      # Step 2: 检查 ablesci.py 是否存在
+      - name: Check if ablesci.py exists
+        id: check-file
         run: |
-          # 使用 curl 下载文件到目标路径
+          if [ -f "ablesci/ablesci.py" ]; then
+            echo "File exists"
+          else
+            echo "File does not exist"
+          fi
+
+      # Step 3: 如果文件不存在则下载 ablesci.py
+      - name: Download ablesci.py if missing
+        if: steps.check-file.outputs.file_exists == 'false'
+        run: |
+          mkdir -p ablesci
           curl -o ablesci/ablesci.py https://raw.githubusercontent.com/chenlunTian/ablesciSign/main/ablesci.py
 
-      # Step 3: 提交更新到你的仓库
+      # Step 4: 提交并推送更新（如果有更改）
       - name: Commit and push changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add ablesci/ablesci.py
-          git commit -m "Update ablesci.py from ablesciSign"
-          git push origin main
+          if [ -n "$(git status --porcelain)" ]; then
+            git add ablesci/ablesci.py
+            git commit -m "Add or update ablesci.py from ablesciSign"
+            git push origin main
+          else
+            echo "No changes to commit"
