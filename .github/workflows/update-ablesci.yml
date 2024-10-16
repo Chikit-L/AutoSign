@@ -1,10 +1,9 @@
 name: Update or Add ablesci.py
 
-# 定期触发，每天凌晨 1 点自动运行
 on:
   schedule:
-    - cron: '0 1 * * *'
-  workflow_dispatch:  # 允许手动触发
+    - cron: '0 1 * * *'   # 定期触发
+  workflow_dispatch:       # 手动触发
 
 jobs:
   update-script:
@@ -20,9 +19,11 @@ jobs:
         id: check-file
         run: |
           if [ -f "ablesci/ablesci.py" ]; then
-            echo "File exists"
+            echo "File exists" 
+            echo "::set-output name=file_exists::true"
           else
             echo "File does not exist"
+            echo "::set-output name=file_exists::false"
           fi
 
       # Step 3: 如果文件不存在则下载 ablesci.py
