@@ -25,18 +25,44 @@ jobs:
             echo "file_exists=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: 如果缺失则下载 ablesci.py
-        if: steps.check-file.outputs.file_exists == 'false'
+      - name: 下载远程 ablesci.py
+        run: curl -o /tmp/remote_ablesci.py https://raw.githubusercontent.com/chenlunTian/ablesciSign/main/ablesci.py
+
+      - name: 如果文件存在且相同则跳过更新
+        id: compare-files
+        if: steps.check-file.outputs.file_exists == 'true'
+        run: |
+          if diff chenlunTian/ablesci.py /tmp/remote_ablesci.py > /dev/null; then
+            echo "文件相同，跳过更新"
+            echo "files_are_same=true" >> $GITHUB_OUTPUT
+          else
+            echo "文件不同，需要更新"
+            echo "files_are_same=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 如果缺失或者文件不同则下载 ablesci.py
+        if: steps.check-file.outputs.file_exists == 'false' || steps.compare-files.outputs.files_are_same == 'false'
         run: |
           mkdir -p chenlunTian
-          curl -o chenlunTian/ablesci.py https://raw.githubusercontent.com/chenlunTian/ablesciSign/main/ablesci.py
+          mv /tmp/remote_ablesci.py chenlunTian/ablesci.py
+
+      - name: 设置提交信息
+        id: set-commit-message
+        if: steps.check-file.outputs.file_exists == 'false' || steps.compare-files.outputs.files_are_same == 'false'
+        run: |
+          if [ "${{ steps.check-file.outputs.file_exists }}" == "true" ]; then
+            echo "commit_message=更新来自 chenlunTian 的 ablesci.py" >> $GITHUB_ENV
+          else
+            echo "commit_message=添加来自 chenlunTian 的 ablesci.py" >> $GITHUB_ENV
+          fi
 
       - name: 提交并推送更改
+        if: steps.check-file.outputs.file_exists == 'false' || steps.compare-files.outputs.files_are_same == 'false'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add chenlunTian/ablesci.py
-          git diff --staged --quiet || git commit -m "添加或更新来自 chenlunTian 的 ablesci.py"
+          git commit -m "${{ env.commit_message }}"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
