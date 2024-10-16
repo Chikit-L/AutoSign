@@ -1,46 +1,38 @@
-name: Update or Add ablesci.py
+name: 更新或添加 ablesci.py
 
 on:
   schedule:
-    - cron: '0 1 * * *'   # 定期触发
-  workflow_dispatch:       # 手动触发
+    - cron: '0 1 * * *'   # 每天 UTC 时间 1:00 运行
+  workflow_dispatch:      # 允许手动触发
 
 jobs:
   update-script:
     runs-on: ubuntu-latest
-
     steps:
-      # Step 1: 检出你的 AutoSign 仓库
-      - name: Checkout AutoSign repo
+      - name: 检出 AutoSign 仓库
         uses: actions/checkout@v2
 
-      # Step 2: 检查 ablesci.py 是否存在
-      - name: Check if ablesci.py exists
+      - name: 检查 ablesci.py 是否存在
         id: check-file
         run: |
           if [ -f "ablesci/ablesci.py" ]; then
-            echo "File exists" 
-            echo "::set-output name=file_exists::true"
+            echo "文件存在"
+            echo "file_exists=true" >> $GITHUB_OUTPUT
           else
-            echo "File does not exist"
-            echo "::set-output name=file_exists::false"
+            echo "文件不存在"
+            echo "file_exists=false" >> $GITHUB_OUTPUT
           fi
 
-      # Step 3: 如果文件不存在则下载 ablesci.py
-      - name: Download ablesci.py if missing
+      - name: 如果缺失则下载 ablesci.py
         if: steps.check-file.outputs.file_exists == 'false'
         run: |
           mkdir -p ablesci
           curl -o ablesci/ablesci.py https://raw.githubusercontent.com/chenlunTian/ablesciSign/main/ablesci.py
 
-      # Step 4: 提交并推送更新（如果有更改）
-      - name: Commit and push changes
+      - name: 提交并推送更改
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          if [ -n "$(git status --porcelain)" ]; then
-            git add ablesci/ablesci.py
-            git commit -m "Add or update ablesci.py from ablesciSign"
-            git push origin main
-          else
-            echo "No changes to commit"
+          git add ablesci/ablesci.py
+          git diff --staged --quiet || git commit -m "添加或更新来自 ablesciSign 的 ablesci.py"
+          git push
