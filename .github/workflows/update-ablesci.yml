@@ -11,6 +11,8 @@ jobs:
     steps:
       - name: 检出 AutoSign 仓库
         uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 检查 ablesci.py 是否存在
         id: check-file
@@ -36,3 +38,5 @@ jobs:
           git add ablesci/ablesci.py
           git diff --staged --quiet || git commit -m "添加或更新来自 ablesciSign 的 ablesci.py"
           git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
