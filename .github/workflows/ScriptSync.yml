@@ -13,7 +13,11 @@ jobs:
         file-info:
           - {local_path: "chenlunTian/ablesci.py", remote_url: "https://raw.githubusercontent.com/chenlunTian/ablesciSign/main/ablesci.py", name: "ablesci.py"}
           - {local_path: "BNDou/Quark.py", remote_url: "https://raw.githubusercontent.com/BNDou/Auto_Check_In/main/checkIn_Quark.py", name: "checkIn_Quark.py"}
-    
+          - {local_path: "chavyleung/follow.js", remote_url: "https://github.com/chavyleung/scripts/blob/master/follow/follow.js", name: "follow.js"}
+          - {local_path: "wf021325/wps.js", remote_url: "	https://raw.githubusercontent.com/wf021325/qx/refs/heads/main/task/wps.js", name: "wps.js"}
+          - {local_path: "6dylan6_jdpro/jd_OnceApply.js", remote_url: "https://github.com/6dylan6/jdpro/blob/main/jd_OnceApply.js", name: "jd_OnceApply.js"}
+          - {local_path: "6dylan6_jdpro/jd_AutoEval.js", remote_url: "https://github.com/6dylan6/jdpro/blob/main/jd_AutoEval.js", name: "jd_AutoEval.js"}
+
     steps:
       - name: 检出仓库
         uses: actions/checkout@v2
