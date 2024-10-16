@@ -36,7 +36,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add ablesci/ablesci.py
-          git diff --staged --quiet || git commit -m "添加或更新来自 ablesciSign 的 ablesci.py"
+          git diff --staged --quiet || git commit -m "添加或更新来自 chenlunTian 的 ablesci.py"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
