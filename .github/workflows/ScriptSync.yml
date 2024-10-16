@@ -1,25 +1,25 @@
-name: 更新或添加脚本
+name: 自动更新或添加脚本
 
 on:
   schedule:
-    - cron: '0 1 * * *'   # 每天 UTC 时间 1:00 运行
-  workflow_dispatch:      # 允许手动触发
+    - cron: '0 1 * * *'  # 每天 UTC 时间 1:00 运行
+  workflow_dispatch:     # 允许手动触发
 
 jobs:
   update-scripts:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        file-info: 
+        file-info:
           - {local_path: "chenlunTian/ablesci.py", remote_url: "https://raw.githubusercontent.com/chenlunTian/ablesciSign/main/ablesci.py", name: "ablesci.py"}
           - {local_path: "BNDou/Quark.py", remote_url: "https://raw.githubusercontent.com/BNDou/Auto_Check_In/main/checkIn_Quark.py", name: "checkIn_Quark.py"}
-
+    
     steps:
       - name: 检出仓库
         uses: actions/checkout@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-
+      
       - name: 检查文件是否存在
         id: check-file
         run: |
@@ -29,10 +29,11 @@ jobs:
           else
             echo "文件不存在"
             echo "file_exists=false" >> $GITHUB_OUTPUT
-
+          fi
+      
       - name: 下载远程文件
         run: curl -o /tmp/remote_file_${{ matrix.file-info.name }} ${{ matrix.file-info.remote_url }}
-
+      
       - name: 如果文件存在且相同则跳过更新
         id: compare-files
         if: steps.check-file.outputs.file_exists == 'true'
@@ -44,27 +45,27 @@ jobs:
             echo "文件不同，需要更新"
             echo "files_are_same=false" >> $GITHUB_OUTPUT
           fi
-
+      
       - name: 如果缺失或者文件不同则更新
         if: steps.check-file.outputs.file_exists == 'false' || steps.compare-files.outputs.files_are_same == 'false'
         run: |
           mkdir -p $(dirname ${{ matrix.file-info.local_path }})
           mv /tmp/remote_file_${{ matrix.file-info.name }} ${{ matrix.file-info.local_path }}
-
+      
       - name: 设置提交信息
         id: set-commit-message
         if: steps.check-file.outputs.file_exists == 'false' || steps.compare-files.outputs.files_are_same == 'false'
         run: |
-          echo "commit_message=更新或添加 ${{ matrix.file-info.local_path }}" >> $GITHUB_ENV
-          echo "file_to_commit=${{ matrix.file-info.local_path }}" >> $GITHUB_ENV
-
+          echo "commit_message=更新或添加 ${{ matrix.file-info.local_path }}" >> $GITHUB_OUTPUT
+          echo "file_to_commit=${{ matrix.file-info.local_path }}" >> $GITHUB_OUTPUT
+      
       - name: 提交并推送更改
-        if: env.commit_message != ""
+        if: steps.set-commit-message.outputs.commit_message != ''
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add ${{ env.file_to_commit }}
-          git commit -m "${{ env.commit_message }}"
+          git add ${{ steps.set-commit-message.outputs.file_to_commit }}
+          git commit -m "${{ steps.set-commit-message.outputs.commit_message }}"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
