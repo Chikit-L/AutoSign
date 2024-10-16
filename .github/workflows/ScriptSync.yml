@@ -48,10 +48,26 @@ jobs:
           cp /tmp/remote_file_${{ matrix.file-info.name }} ${{ matrix.file-info.local_path }}
       
       - name: 复制通知文件到脚本目录
+        id: copy-notify
         run: |
+          pwd
+          ls -la
           script_dir=$(dirname "${{ matrix.file-info.local_path }}")
-          cp notify.py sendNotify.js "$script_dir/"
-          echo "copied_notify=true" >> $GITHUB_OUTPUT
+          echo "脚本目录: $script_dir"
+          if [ ! -f "notify.py" ] || [ ! -f "sendNotify.js" ]; then
+            echo "错误：通知文件不存在于根目录"
+            exit 1
+          fi
+          mkdir -p "$script_dir"
+          cp -v notify.py sendNotify.js "$script_dir/"
+          if [ $? -eq 0 ]; then
+            echo "通知文件复制成功"
+            echo "copied_notify=true" >> $GITHUB_OUTPUT
+          else
+            echo "错误：复制通知文件失败"
+            exit 1
+          fi
+          ls -la "$script_dir"
       
       - name: 设置提交信息
         id: set-commit-message
@@ -72,6 +88,7 @@ jobs:
           git add "${{ steps.set-commit-message.outputs.file_to_commit }}"
           script_dir=$(dirname "${{ matrix.file-info.local_path }}")
           git add "$script_dir/notify.py" "$script_dir/sendNotify.js"
+          git status
           git commit -m "${{ steps.set-commit-message.outputs.commit_message }}"
           git push
         env:
