@@ -36,8 +36,8 @@ class YuChen:
     def headers(self):
         return {
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "Host": "yuchen.tonghuaios.com",
-            "Origin": "https://yuchen.tonghuaios.com",
+            "Host": "yc.yuchengyouxi..com",
+            "Origin": "https://yc.yuchengyouxi..com",
             "User-Agent": self.user_agent
         }
 
@@ -45,7 +45,7 @@ class YuChen:
         """
         获取登录所需token
         """
-        url = "https://yuchen.tonghuaios.com/login"
+        url = "https://yc.yuchengyouxi..com/login"
         headers = {
             "User-Agent": self.user_agent
         }
@@ -59,12 +59,12 @@ class YuChen:
         """
         登录网站
         """
-        url = "https://yuchen.tonghuaios.com/wp-admin/admin-ajax.php"
+        url = "https://yc.yuchengyouxi.com/wp-admin/admin-ajax.php"
         data = {
             "user_login": self.username,
             "password": self.password,
             "rememberme": "1",
-            "redirect": "https://yuchen.tonghuaios.com/",
+            "redirect": "https://yc.yuchengyouxi..com/",
             "action": "userlogin_form",
             "token": self.token
         }
@@ -82,7 +82,7 @@ class YuChen:
         """
         签到
         """
-        url = "https://yuchen.tonghuaios.com/wp-admin/admin-ajax.php"
+        url = "https://yc.yuchengyouxi..com/wp-admin/admin-ajax.php"
         data = {
             "action": "daily_sign"
         }
@@ -97,7 +97,7 @@ class YuChen:
         """
         获取积分总值
         """
-        url = "https://yuchen.tonghuaios.com/users?tab=credit"
+        url = "https://yc.yuchengyouxi..com/users?tab=credit"
         headers = self.headers()
         response = self.session.get(url=url, headers=headers)
         soup = BeautifulSoup(response.text, "html.parser")

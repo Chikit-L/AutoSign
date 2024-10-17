@@ -1,4 +1,4 @@
-name: 更新或添加脚本并同步通知文件
+name: 更新或添加脚本
 
 on:
   schedule:
@@ -11,9 +11,13 @@ jobs:
     strategy:
       matrix:
         file-info:
-          - {local_path: "chenlunTian/ablesci.py", remote_url: "https://raw.githubusercontent.com/chenlunTian/ablesciSign/main/ablesci.py", name: "ablesci.py"}
-          - {local_path: "BNDou/Quark.py", remote_url: "https://raw.githubusercontent.com/BNDou/Auto_Check_In/main/checkIn_Quark.py", name: "checkIn_Quark.py"}
-    
+          - {local_path: "ablesci.py", remote_url: "https://raw.githubusercontent.com/chenlunTian/ablesciSign/main/ablesci.py", name: "ablesci.py"}
+          - {local_path: "Quark.py", remote_url: "https://raw.githubusercontent.com/BNDou/Auto_Check_In/main/checkIn_Quark.py", name: "checkIn_Quark.py"}
+          - {local_path: "wps.js", remote_url: "https://raw.githubusercontent.com/wf021325/qx/refs/heads/main/task/wps.js", name: "wps.js"}
+          - {local_path: "jd_OnceApply.js", remote_url: "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_OnceApply.js", name: "jd_OnceApply.js"}
+          - {local_path: "jd_AutoEval.js", remote_url: "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_AutoEval.js", name: "jd_AutoEval.js"}
+
+
     steps:
       - name: 检出仓库
         uses: actions/checkout@v2
@@ -47,48 +51,23 @@ jobs:
         run: |
           cp /tmp/remote_file_${{ matrix.file-info.name }} ${{ matrix.file-info.local_path }}
       
-      - name: 复制通知文件到脚本目录
-        id: copy-notify
-        run: |
-          pwd
-          ls -la
-          script_dir=$(dirname "${{ matrix.file-info.local_path }}")
-          echo "脚本目录: $script_dir"
-          if [ ! -f "notify.py" ] || [ ! -f "sendNotify.js" ]; then
-            echo "错误：通知文件不存在于根目录"
-            exit 1
-          fi
-          mkdir -p "$script_dir"
-          cp -v notify.py sendNotify.js "$script_dir/"
-          if [ $? -eq 0 ]; then
-            echo "通知文件复制成功"
-            echo "copied_notify=true" >> $GITHUB_OUTPUT
-          else
-            echo "错误：复制通知文件失败"
-            exit 1
-          fi
-          ls -la "$script_dir"
-      
       - name: 设置提交信息
         id: set-commit-message
-        if: steps.check-and-download.outputs.file_changed == 'true' || steps.copy-notify.outputs.copied_notify == 'true'
+        if: steps.check-and-download.outputs.file_changed == 'true'
         run: |
           if [ "${{ steps.check-and-download.outputs.file_exists }}" == "true" ]; then
-            echo "commit_message=更新 ${{ matrix.file-info.local_path }} 及同步通知文件" >> $GITHUB_OUTPUT
+            echo "commit_message=更新 ${{ matrix.file-info.local_path }}" >> $GITHUB_OUTPUT
           else
-            echo "commit_message=添加 ${{ matrix.file-info.local_path }} 及同步通知文件" >> $GITHUB_OUTPUT
+            echo "commit_message=添加 ${{ matrix.file-info.local_path }}" >> $GITHUB_OUTPUT
           fi
           echo "file_to_commit=${{ matrix.file-info.local_path }}" >> $GITHUB_OUTPUT
       
       - name: 提交并推送更改
-        if: steps.check-and-download.outputs.file_changed == 'true' || steps.copy-notify.outputs.copied_notify == 'true'
+        if: steps.check-and-download.outputs.file_changed == 'true'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add "${{ steps.set-commit-message.outputs.file_to_commit }}"
-          script_dir=$(dirname "${{ matrix.file-info.local_path }}")
-          git add "$script_dir/notify.py" "$script_dir/sendNotify.js"
-          git status
           git commit -m "${{ steps.set-commit-message.outputs.commit_message }}"
           git push
         env:
