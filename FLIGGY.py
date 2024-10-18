@@ -1,3 +1,7 @@
+#!/usr/bin/env bash
+# cron:0 9 * * *
+# new Env("飞猪签到")
+
 import hashlib
 import time
 import json
