@@ -34,7 +34,7 @@ if not chromedriver_path:
 
 # 初始化 WebDriver，使用无头模式
 chrome_options = webdriver.ChromeOptions()
-#chrome_options.add_argument("--headless")  # 无头模式，注释掉这行可以看到浏览器操作
+chrome_options.add_argument("--headless")  # 无头模式，注释掉这行可以看到浏览器操作
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("--disable-dev-shm-usage")
@@ -89,27 +89,37 @@ try:
     driver.get('https://bbs.kafan.cn/')
     time.sleep(3)
 
-    # 获取前五个帖子
-    post_elements = driver.find_elements(By.XPATH, '//*[@id="comeing_toplist"]/li/a')[:5]  # 这里使用正确的 XPATH 定位到前五个帖子
-    post_titles = []
-    post_links = []
+    # 获取帖子标题和链接，一次性存储所有帖子的信息
+    post_elements = WebDriverWait(driver, 20).until(
+        EC.presence_of_all_elements_located((By.XPATH, '//ul[@class="comeing_toplist"]/li/a'))
+    )
 
-    # 获取帖子标题和链接
-    for post in post_elements:
-        post_titles.append(post.get_attribute('title'))
-        post_links.append(post.get_attribute('href'))
+    # 存储所有帖子的标题和链接
+    posts_info = []
+    for i, post in enumerate(post_elements[:5]):
+        post_title = post.get_attribute('title')  # 获取帖子的标题
+        post_link = post.get_attribute('href')  # 获取帖子的链接
+        posts_info.append((post_title, post_link))  # 将标题和链接存入列表
+        logging.info(f"已获取帖子 {i + 1} 的信息: {post_title}, 链接: {post_link}")
 
-    # 逐个访问帖子并模拟阅读
-    for i, (post_title, post_link) in enumerate(zip(post_titles, post_links)):
-        logging.info(f"访问帖子 {i + 1}: {post_title}")
+    last_post_title = ""  # 用于记录最后一个帖子的标题
+
+    # 遍历存储的帖子链接和标题，依次访问和模拟阅读
+    for i, (post_title, post_link) in enumerate(posts_info):
+        logging.info(f"访问帖子 {i + 1}: {post_title}, 链接: {post_link}")
         driver.get(post_link)
 
         # 模拟阅读 5 秒钟，期间下滑页面
-        for scroll in range(5):
+        for scroll in range(5):  # 模拟连续向下滚动
             driver.execute_script("window.scrollBy(0, 300);")  # 每次滚动300像素
             time.sleep(1)  # 每次滚动后等待1秒
 
+        # 更新最后阅读的帖子标题
+        last_post_title = post_title
+
         logging.info(f"完成帖子 {i + 1} 的阅读")
+
+        # 在两个帖子之间增加等待时间，以模拟用户行为
         time.sleep(2)
 
     # 发送签到结果和帖子信息
