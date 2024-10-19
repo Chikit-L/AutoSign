@@ -8,65 +8,78 @@ on:
 jobs:
   update-scripts:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        file-info:
-          - {local_path: "ablesci.py", remote_url: "https://raw.githubusercontent.com/chenlunTian/ablesciSign/main/ablesci.py", name: "ablesci.py"}
-          - {local_path: "Quark.py", remote_url: "https://raw.githubusercontent.com/BNDou/Auto_Check_In/main/checkIn_Quark.py", name: "checkIn_Quark.py"}
-          - {local_path: "wps.js", remote_url: "https://raw.githubusercontent.com/wf021325/qx/refs/heads/main/task/wps.js", name: "wps.js"}
-          - {local_path: "jd_OnceApply.js", remote_url: "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_OnceApply.js", name: "jd_OnceApply.js"}
-          - {local_path: "jd_AutoEval.js", remote_url: "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_AutoEval.js", name: "jd_AutoEval.js"}
-
+    
     steps:
       - name: 检出仓库
         uses: actions/checkout@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: 检查文件是否存在并下载远程文件
-        id: check-and-download
-        run: |
-          if [ -f "${{ matrix.file-info.local_path }}" ]; then
-            echo "file_exists=true" >> $GITHUB_OUTPUT
-            echo "文件存在，下载远程文件进行比较"
-            curl -s -o /tmp/remote_file_${{ matrix.file-info.name }} ${{ matrix.file-info.remote_url }}
-            if diff -q "${{ matrix.file-info.local_path }}" "/tmp/remote_file_${{ matrix.file-info.name }}" > /dev/null; then
-              echo "file_changed=false" >> $GITHUB_OUTPUT
-              echo "文件没有变化，无需更新"
-            else
-              echo "file_changed=true" >> $GITHUB_OUTPUT
-              echo "文件有变化，需要更新"
-            fi
-          else
-            echo "file_exists=false" >> $GITHUB_OUTPUT
-            echo "文件不存在，需要添加"
-            curl -s -o "${{ matrix.file-info.local_path }}" ${{ matrix.file-info.remote_url }}
-            echo "file_changed=true" >> $GITHUB_OUTPUT
-          fi
+      - name: 设置 Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
       
-      - name: 更新文件（如果需要）
-        if: steps.check-and-download.outputs.file_exists == 'true' && steps.check-and-download.outputs.file_changed == 'true'
+      - name: 安装依赖
         run: |
-          cp /tmp/remote_file_${{ matrix.file-info.name }} ${{ matrix.file-info.local_path }}
+          python -m pip install --upgrade pip
+          pip install requests
       
-      - name: 设置提交信息
-        id: set-commit-message
-        if: steps.check-and-download.outputs.file_changed == 'true'
+      - name: 更新脚本
         run: |
-          if [ "${{ steps.check-and-download.outputs.file_exists }}" == "true" ]; then
-            echo "commit_message=更新 ${{ matrix.file-info.local_path }}" >> $GITHUB_OUTPUT
-          else
-            echo "commit_message=添加 ${{ matrix.file-info.local_path }}" >> $GITHUB_OUTPUT
-          fi
-          echo "file_to_commit=${{ matrix.file-info.local_path }}" >> $GITHUB_OUTPUT
+          import os
+          import requests
+          import hashlib
+          
+          def update_file(local_path, remote_url):
+              try:
+                  response = requests.get(remote_url)
+                  response.raise_for_status()
+                  remote_content = response.content
+                  
+                  if os.path.exists(local_path):
+                      with open(local_path, 'rb') as f:
+                          local_content = f.read()
+                      if hashlib.md5(local_content).hexdigest() == hashlib.md5(remote_content).hexdigest():
+                          print(f"文件 {local_path} 没有变化，无需更新")
+                          return False
+                  
+                  with open(local_path, 'wb') as f:
+                      f.write(remote_content)
+                  print(f"文件 {local_path} 已更新")
+                  return True
+              except Exception as e:
+                  print(f"更新文件 {local_path} 时出错: {str(e)}")
+                  return False
+          
+          files_to_update = [
+              # 在这里添加需要同步的文件信息
+              {local_path: "ablesci.py", remote_url: "https://raw.githubusercontent.com/chenlunTian/ablesciSign/main/ablesci.py", name: "ablesci.py"},
+              {local_path: "Quark.py", remote_url: "https://raw.githubusercontent.com/BNDou/Auto_Check_In/main/checkIn_Quark.py", name: "checkIn_Quark.py"},
+              {local_path: "wps.js", remote_url: "https://raw.githubusercontent.com/wf021325/qx/refs/heads/main/task/wps.js", name: "wps.js"},
+              {local_path: "jd_OnceApply.js", remote_url: "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_OnceApply.js", name: "jd_OnceApply.js"},
+              {local_path: "jd_AutoEval.js", remote_url: "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_AutoEval.js", name: "jd_AutoEval.js"},
+          ]
+          
+          updated = False
+          for file_info in files_to_update:
+              if update_file(file_info['local_path'], file_info['remote_url']):
+                  updated = True
+          
+          if updated:
+              print("::set-output name=files_updated::true")
+          else:
+              print("::set-output name=files_updated::false")
+        id: update-scripts
+        shell: python
       
       - name: 提交并推送更改
-        if: steps.check-and-download.outputs.file_changed == 'true'
+        if: steps.update-scripts.outputs.files_updated == 'true'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add "${{ steps.set-commit-message.outputs.file_to_commit }}"
-          git commit -m "${{ steps.set-commit-message.outputs.commit_message }}"
+          git add .
+          git commit -m "更新脚本文件"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
