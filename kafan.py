@@ -1,5 +1,6 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+#!/usr/bin/env bash
+# cron:0 9 * * *
+# new Env("卡饭签到")
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
