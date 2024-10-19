@@ -91,6 +91,7 @@ jobs:
               {"local_path": "jd_OnceApply.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_OnceApply.js"},
               {"local_path": "jd_AutoEval.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_AutoEval.js"},
               {"local_path": "jdCookie.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jdCookie.js"},
+              {"local_path": "function/dylano.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/function/dylano.js"},
 
           ]
           
