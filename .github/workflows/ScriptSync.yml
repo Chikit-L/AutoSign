@@ -2,7 +2,7 @@ name: 更新或添加脚本
 
 on:
   schedule:
-    - cron: '0 1 * * *'  # 每天 UTC 时间 1:00 运行
+    - cron: '0 8 * * *'  # 每天 UTC 时间 1:00 运行
   workflow_dispatch:     # 允许手动触发
 
 jobs:
@@ -53,12 +53,11 @@ jobs:
                   return False
           
           files_to_update = [
-              # 在这里添加需要同步的文件信息
-              {local_path: "ablesci.py", remote_url: "https://raw.githubusercontent.com/chenlunTian/ablesciSign/main/ablesci.py", name: "ablesci.py"},
-              {local_path: "Quark.py", remote_url: "https://raw.githubusercontent.com/BNDou/Auto_Check_In/main/checkIn_Quark.py", name: "checkIn_Quark.py"},
-              {local_path: "wps.js", remote_url: "https://raw.githubusercontent.com/wf021325/qx/refs/heads/main/task/wps.js", name: "wps.js"},
-              {local_path: "jd_OnceApply.js", remote_url: "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_OnceApply.js", name: "jd_OnceApply.js"},
-              {local_path: "jd_AutoEval.js", remote_url: "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_AutoEval.js", name: "jd_AutoEval.js"},
+              {"local_path": "ablesci.py", "remote_url": "https://raw.githubusercontent.com/chenlunTian/ablesciSign/main/ablesci.py"},
+              {"local_path": "Quark.py", "remote_url": "https://raw.githubusercontent.com/BNDou/Auto_Check_In/main/checkIn_Quark.py"},
+              {"local_path": "wps.js", "remote_url": "https://raw.githubusercontent.com/wf021325/qx/refs/heads/main/task/wps.js"},
+              {"local_path": "jd_OnceApply.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_OnceApply.js"},
+              {"local_path": "jd_AutoEval.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_AutoEval.js"},
           ]
           
           updated = False
