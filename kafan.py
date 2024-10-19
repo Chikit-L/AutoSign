@@ -18,9 +18,9 @@ from notify import send  # 引入 send 函数用于发送消息
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
 
 # 获取青龙面板中的账号和密码环境变量，格式为: '帐号;密码'
-credentials = os.getenv('KAFAN_CREDENTIALS')
+credentials = os.getenv('KAFAN')
 if not credentials or ';' not in credentials:
-    logging.error("未检测到正确格式的环境变量 KAFAN_CREDENTIALS")
+    logging.error("未检测到正确格式的环境变量 KAFAN")
     exit(1)
 
 # 拆分账号和密码
