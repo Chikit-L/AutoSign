@@ -89,7 +89,7 @@ try:
     driver.get('https://bbs.kafan.cn/')
     time.sleep(3)
 
-    # 获取帖子标题和链接，一次性存储所有帖子的信息
+    # 获取帖子标题和链接，一次性存储所有帖子的标题和链接
     post_elements = WebDriverWait(driver, 20).until(
         EC.presence_of_all_elements_located((By.XPATH, '//ul[@class="comeing_toplist"]/li/a'))
     )
@@ -102,8 +102,6 @@ try:
         posts_info.append((post_title, post_link))  # 将标题和链接存入列表
         logging.info(f"已获取帖子 {i + 1} 的信息: {post_title}, 链接: {post_link}")
 
-    last_post_title = ""  # 用于记录最后一个帖子的标题
-
     # 遍历存储的帖子链接和标题，依次访问和模拟阅读
     for i, (post_title, post_link) in enumerate(posts_info):
         logging.info(f"访问帖子 {i + 1}: {post_title}, 链接: {post_link}")
@@ -114,13 +112,13 @@ try:
             driver.execute_script("window.scrollBy(0, 300);")  # 每次滚动300像素
             time.sleep(1)  # 每次滚动后等待1秒
 
-        # 更新最后阅读的帖子标题
-        last_post_title = post_title
-
         logging.info(f"完成帖子 {i + 1} 的阅读")
 
         # 在两个帖子之间增加等待时间，以模拟用户行为
         time.sleep(2)
+
+    # 获取所有帖子标题用于消息推送
+    post_titles = [post_title for post_title, post_link in posts_info]
 
     # 发送签到结果和帖子信息
     message = f"签到成功，目前积分为 {credit_value}，最后一次签到时间 {last_signin_time}。\n成功阅读的帖子:\n" + "\n".join(post_titles)
