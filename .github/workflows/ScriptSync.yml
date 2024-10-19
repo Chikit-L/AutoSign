@@ -85,13 +85,15 @@ jobs:
           
           files_to_update = [
               {"local_path": "ablesci.py", "remote_url": "https://raw.githubusercontent.com/chenlunTian/ablesciSign/main/ablesci.py"},
-              {"local_path": "Quark.py", "remote_url": "https://raw.githubusercontent.com/BNDou/Auto_Check_In/main/checkIn_Quark.py"},
-              {"local_path": "utils", "remote_url": "https://github.com/BNDou/Auto_Check_In/tree/main/utils"},
+              {"local_path": "Quark/Quark.py", "remote_url": "https://raw.githubusercontent.com/BNDou/Auto_Check_In/main/checkIn_Quark.py"},
+              {"local_path": "Quark/utils", "remote_url": "https://github.com/BNDou/Auto_Check_In/tree/main/utils"},
               {"local_path": "wps.js", "remote_url": "https://raw.githubusercontent.com/wf021325/qx/refs/heads/main/task/wps.js"},
-              {"local_path": "jd_OnceApply.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_OnceApply.js"},
-              {"local_path": "jd_AutoEval.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_AutoEval.js"},
-              {"local_path": "jdCookie.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jdCookie.js"},
-              {"local_path": "function/dylano.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/function/dylano.js"},
+              {"local_path": "jingdong/jd_OnceApply.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_OnceApply.js"},
+              {"local_path": "jingdong/jd_AutoEval.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_AutoEval.js"},
+              {"local_path": "jingdong/jdCookie.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jdCookie.js"},
+              {"local_path": "jingdong/function/dylano.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/function/dylano.js"},
+              {"local_path": "jingdong/function/dylanx.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/function/dylanx.js"},
+              {"local_path": "jingdong/USER_AGENTS.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/USER_AGENTS.js"},
 
           ]
           
