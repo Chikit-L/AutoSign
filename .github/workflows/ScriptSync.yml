@@ -1,78 +1,92 @@
-name: ScriptSync
+name: 更新或添加脚本和文件夹
 
 on:
-  push:
-    branches:
-      - main
   schedule:
-    - cron: '0 0 * * *' # 每天凌晨运行
-  workflow_dispatch: # 手动触发选项
+    - cron: '0 8 * * *'  # 每天 UTC 时间 8:00 运行
+  workflow_dispatch:     # 允许手动触发
 
 jobs:
-  update_scripts:
+  update-scripts:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout repository
+      - name: 检出仓库
         uses: actions/checkout@v2
-
-      - name: Set up Python
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: 设置 Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.x'
-
-      - name: Install requests library
+      
+      - name: 安装依赖
         run: |
           python -m pip install --upgrade pip
           pip install requests
-
-      - name: Sync scripts
+      
+      - name: 更新脚本和文件夹
         run: |
           import os
           import requests
           import hashlib
-
-          def download_and_save_file(local_path, remote_url):
+          import base64
+          
+          def update_file(local_path, remote_url):
               try:
                   response = requests.get(remote_url)
                   response.raise_for_status()
                   remote_content = response.content
+                  
+                  if os.path.exists(local_path):
+                      with open(local_path, 'rb') as f:
+                          local_content = f.read()
+                      if hashlib.md5(local_content).hexdigest() == hashlib.md5(remote_content).hexdigest():
+                          print(f"文件 {local_path} 没有变化，无需更新")
+                          return False
+                  
                   os.makedirs(os.path.dirname(local_path), exist_ok=True)
                   with open(local_path, 'wb') as f:
                       f.write(remote_content)
-                  print(f"✅ 成功下载文件到: {local_path}")
+                  print(f"文件 {local_path} 已更新")
                   return True
               except Exception as e:
-                  print(f"❌ 下载文件失败 {local_path}: {str(e)}")
+                  print(f"更新文件 {local_path} 时出错: {str(e)}")
                   return False
 
-          def check_and_update_file(local_path, remote_url):
+          def update_folder(local_path, remote_url):
               try:
-                  response = requests.get(remote_url)
-                  response.raise_for_status()
-                  remote_content = response.content
-                  if not os.path.exists(local_path):
-                      print(f"📥 文件不存在，开始下载: {local_path}")
-                      return download_and_save_file(local_path, remote_url)
-
-                  with open(local_path, 'rb') as f:
-                      local_content = f.read()
+                  # 解析 GitHub URL
+                  _, _, _, owner, repo, _, branch, *path = remote_url.split('/')
+                  path = '/'.join(path)
                   
-                  if hashlib.md5(local_content).hexdigest() == hashlib.md5(remote_content).hexdigest():
-                      print(f"✓ 文件无需更新: {local_path}")
-                      return False
-                  else:
-                      print(f"🔄 文件需要更新: {local_path}")
-                      with open(local_path, 'wb') as f:
-                          f.write(remote_content)
-                      print(f"✅ 文件已更新: {local_path}")
-                      return True
+                  # 构建 GitHub API URL
+                  api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}?ref={branch}"
+                  
+                  response = requests.get(api_url)
+                  response.raise_for_status()
+                  files = response.json()
+                  
+                  updated = False
+                  for file in files:
+                      if file['type'] == 'file':
+                          file_path = os.path.join(local_path, file['name'])
+                          if update_file(file_path, file['download_url']):
+                              updated = True
+                      elif file['type'] == 'dir':
+                          subdir_path = os.path.join(local_path, file['name'])
+                          if update_folder(subdir_path, file['url']):
+                              updated = True
+                  
+                  return updated
               except Exception as e:
-                  print(f"❌ 检查更新失败 {local_path}: {str(e)}")
+                  print(f"更新文件夹 {local_path} 时出错: {str(e)}")
                   return False
-
+          
           files_to_update = [
               {"local_path": "ablesci.py", "remote_url": "https://raw.githubusercontent.com/chenlunTian/ablesciSign/main/ablesci.py"},
               {"local_path": "Quark/Quark.py", "remote_url": "https://raw.githubusercontent.com/BNDou/Auto_Check_In/main/checkIn_Quark.py"},
+              {"local_path": "Quark/utils", "remote_url": "https://github.com/BNDou/Auto_Check_In/tree/main/utils"},
               {"local_path": "wps.js", "remote_url": "https://raw.githubusercontent.com/wf021325/qx/refs/heads/main/task/wps.js"},
               {"local_path": "jingdong/jd_OnceApply.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_OnceApply.js"},
               {"local_path": "jingdong/jd_AutoEval.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_AutoEval.js"},
@@ -80,15 +94,32 @@ jobs:
               {"local_path": "jingdong/function/dylano.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/function/dylano.js"},
               {"local_path": "jingdong/function/dylanx.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/function/dylanx.js"},
               {"local_path": "jingdong/USER_AGENTS.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/USER_AGENTS.js"},
-              {"local_path": "follow.py", "remote_url": "https://raw.githubusercontent.com/AKA-Cigma/QLscripts/refs/heads/main/follow.py"}
+              {"local_path": "follow.py", "remote_url": "https://raw.githubusercontent.com/AKA-Cigma/QLscripts/refs/heads/main/follow.py"},
           ]
-
+          
           updated = False
           for item in files_to_update:
-              try:
-                  if check_and_update_file(item['local_path'], item['remote_url']):
+              if item['remote_url'].startswith('https://github.com') and '/tree/' in item['remote_url']:
+                  if update_folder(item['local_path'], item['remote_url']):
                       updated = True
-              except Exception as e:
-                  print(f"❌ 处理 {item['local_path']} 时出错: {str(e)}")
-
-          print("Files updated:", updated)
+              else:
+                  if update_file(item['local_path'], item['remote_url']):
+                      updated = True
+          
+          if updated:
+              print("::set-output name=files_updated::true")
+          else:
+              print("::set-output name=files_updated::false")
+        id: update-scripts
+        shell: python
+      
+      - name: 提交并推送更改
+        if: steps.update-scripts.outputs.files_updated == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "更新脚本文件和文件夹"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
