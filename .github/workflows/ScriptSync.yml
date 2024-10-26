@@ -94,9 +94,7 @@ jobs:
               {"local_path": "jingdong/function/dylano.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/function/dylano.js"},
               {"local_path": "jingdong/function/dylanx.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/function/dylanx.js"},
               {"local_path": "jingdong/USER_AGENTS.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/USER_AGENTS.js"},
-              {"local_path": "follow.py", "remote_url": https://raw.githubusercontent.com/AKA-Cigma/QLscripts/refs/heads/main/follow.py"},
-
-
+              {"local_path": "follow.py", "remote_url": "https://raw.githubusercontent.com/AKA-Cigma/QLscripts/refs/heads/main/follow.py"},
           ]
           
           updated = False
