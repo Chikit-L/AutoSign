@@ -31,41 +31,116 @@ jobs:
           import requests
           import hashlib
           import base64
+          import traceback
+          from typing import Dict, List, Optional
           
-          def update_file(local_path, remote_url):
+          def validate_github_url(url: str) -> bool:
+              """
+              验证GitHub URL是否有效
+              """
+              print(f"验证URL: {url}")
+              if not url:
+                  print("URL为空")
+                  return False
+              if not url.startswith(('https://raw.githubusercontent.com', 'https://github.com')):
+                  print("不是有效的GitHub URL")
+                  return False
+              return True
+          
+          def get_file_content(url: str) -> Optional[bytes]:
+              """
+              获取文件内容，带有详细的错误处理
+              """
               try:
-                  response = requests.get(remote_url)
+                  response = requests.get(url, timeout=30)
+                  if response.status_code == 404:
+                      print(f"文件不存在: {url}")
+                      return None
                   response.raise_for_status()
-                  remote_content = response.content
+                  return response.content
+              except requests.exceptions.RequestException as e:
+                  print(f"请求失败: {str(e)}")
+                  if hasattr(e, 'response') and e.response is not None:
+                      print(f"状态码: {e.response.status_code}")
+                      print(f"响应内容: {e.response.text[:200]}...")
+                  return None
+          
+          def update_file(local_path: str, remote_url: str) -> bool:
+              """
+              更新单个文件，带有完整的错误处理和日志
+              """
+              try:
+                  print(f"\n开始更新文件: {local_path}")
+                  print(f"远程URL: {remote_url}")
                   
+                  # 获取远程文件内容
+                  remote_content = get_file_content(remote_url)
+                  if remote_content is None:
+                      return False
+                  
+                  # 确保目录存在
+                  directory = os.path.dirname(local_path)
+                  if directory:
+                      os.makedirs(directory, exist_ok=True)
+                      print(f"确保目录存在: {directory}")
+                  
+                  # 检查文件是否需要更新
                   if os.path.exists(local_path):
                       with open(local_path, 'rb') as f:
                           local_content = f.read()
                       if hashlib.md5(local_content).hexdigest() == hashlib.md5(remote_content).hexdigest():
-                          print(f"文件 {local_path} 没有变化，无需更新")
+                          print(f"文件无变化，跳过更新: {local_path}")
                           return False
                   
-                  os.makedirs(os.path.dirname(local_path), exist_ok=True)
+                  # 写入新内容
                   with open(local_path, 'wb') as f:
                       f.write(remote_content)
-                  print(f"文件 {local_path} 已更新")
+                  print(f"文件更新成功: {local_path}")
                   return True
-              except Exception as e:
-                  print(f"更新文件 {local_path} 时出错: {str(e)}")
+                  
+              except IOError as e:
+                  print(f"IO错误 - {local_path}: {str(e)}")
+                  print(f"错误堆栈:\n{traceback.format_exc()}")
                   return False
-
-          def update_folder(local_path, remote_url):
+              except Exception as e:
+                  print(f"意外错误 - {local_path}: {str(e)}")
+                  print(f"错误堆栈:\n{traceback.format_exc()}")
+                  return False
+          
+          def update_folder(local_path: str, remote_url: str) -> bool:
+              """
+              更新整个文件夹，带有详细的错误处理
+              """
               try:
+                  print(f"\n开始更新文件夹: {local_path}")
+                  print(f"远程URL: {remote_url}")
+                  
                   # 解析 GitHub URL
-                  _, _, _, owner, repo, _, branch, *path = remote_url.split('/')
-                  path = '/'.join(path)
+                  parts = remote_url.split('/')
+                  if len(parts) < 8:
+                      print(f"无效的GitHub文件夹URL: {remote_url}")
+                      return False
+                      
+                  owner = parts[3]
+                  repo = parts[4]
+                  branch = parts[6]
+                  path = '/'.join(parts[7:])
                   
                   # 构建 GitHub API URL
                   api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}?ref={branch}"
+                  print(f"API URL: {api_url}")
                   
-                  response = requests.get(api_url)
+                  # 获取文件列表
+                  response = requests.get(api_url, timeout=30)
+                  if response.status_code == 404:
+                      print(f"文件夹不存在: {remote_url}")
+                      return False
                   response.raise_for_status()
                   files = response.json()
+                  
+                  # 创建本地文件夹
+                  os.makedirs(local_path, exist_ok=True)
+                  print(f"确保本地文件夹存在: {local_path}")
                   
                   updated = False
                   for file in files:
@@ -79,37 +154,60 @@ jobs:
                               updated = True
                   
                   return updated
+                  
+              except requests.exceptions.RequestException as e:
+                  print(f"请求错误 - {local_path}: {str(e)}")
+                  if hasattr(e, 'response') and e.response is not None:
+                      print(f"状态码: {e.response.status_code}")
+                      print(f"响应内容: {e.response.text[:200]}...")
+                  return False
               except Exception as e:
-                  print(f"更新文件夹 {local_path} 时出错: {str(e)}")
+                  print(f"意外错误 - {local_path}: {str(e)}")
+                  print(f"错误堆栈:\n{traceback.format_exc()}")
                   return False
           
+          # 要更新的文件列表
           files_to_update = [
               {"local_path": "ablesci.py", "remote_url": "https://raw.githubusercontent.com/chenlunTian/ablesciSign/main/ablesci.py"},
               {"local_path": "Quark/Quark.py", "remote_url": "https://raw.githubusercontent.com/BNDou/Auto_Check_In/main/checkIn_Quark.py"},
               {"local_path": "Quark/utils", "remote_url": "https://github.com/BNDou/Auto_Check_In/tree/main/utils"},
               {"local_path": "wps.js", "remote_url": "https://raw.githubusercontent.com/wf021325/qx/main/task/wps.js"},
-              {"local_path": "jingdong/jd_OnceApply.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_OnceApply.js"},
-              {"local_path": "jingdong/jd_AutoEval.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jd_AutoEval.js"},
-              {"local_path": "jingdong/jdCookie.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/jdCookie.js"},
-              {"local_path": "jingdong/function/dylano.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/function/dylano.js"},
-              {"local_path": "jingdong/function/dylanx.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/function/dylanx.js"},
-              {"local_path": "jingdong/USER_AGENTS.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/refs/heads/main/USER_AGENTS.js"},
+              {"local_path": "jingdong/jd_OnceApply.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/main/jd_OnceApply.js"},
+              {"local_path": "jingdong/jd_AutoEval.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/main/jd_AutoEval.js"},
+              {"local_path": "jingdong/jdCookie.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/main/jdCookie.js"},
+              {"local_path": "jingdong/function/dylano.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/main/function/dylano.js"},
+              {"local_path": "jingdong/function/dylanx.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/main/function/dylanx.js"},
+              {"local_path": "jingdong/USER_AGENTS.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/main/USER_AGENTS.js"},
               {"local_path": "follow.py", "remote_url": "https://raw.githubusercontent.com/AKA-Cigma/QLscripts/main/follow.py"},
           ]
           
+          # 主执行逻辑
+          print("开始更新文件...")
           updated = False
-          for item in files_to_update:
-              if item['remote_url'].startswith('https://github.com') and '/tree/' in item['remote_url']:
-                  if update_folder(item['local_path'], item['remote_url']):
-                      updated = True
-              else:
-                  if update_file(item['local_path'], item['remote_url']):
-                      updated = True
           
+          for item in files_to_update:
+              if not validate_github_url(item['remote_url']):
+                  print(f"跳过无效URL: {item['remote_url']}\n")
+                  continue
+              
+              try:
+                  if item['remote_url'].startswith('https://github.com') and '/tree/' in item['remote_url']:
+                      if update_folder(item['local_path'], item['remote_url']):
+                          updated = True
+                  else:
+                      if update_file(item['local_path'], item['remote_url']):
+                          updated = True
+              except Exception as e:
+                  print(f"处理 {item['local_path']} 时发生错误: {str(e)}")
+                  print(f"错误堆栈:\n{traceback.format_exc()}")
+          
+          # 设置输出
           if updated:
-              print("::set-output name=files_updated::true")
+              print("\n::set-output name=files_updated::true")
+              print("有文件被更新")
           else:
-              print("::set-output name=files_updated::false")
+              print("\n::set-output name=files_updated::false")
+              print("没有文件需要更新")
         id: update-scripts
         shell: python
       
