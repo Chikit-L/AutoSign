@@ -10,8 +10,9 @@
 | **任务** | **来源** | **说明** |
 | --- | --- | --- | 
 | 人人影视字幕组 | 自写 | 签到增加天数，无任何作用
-| 好时充 | 自写 | 签到获取积分，据说能够抵扣现金
+| 好时充 | 自写 | 签到获取积分，积分抵扣现金
 | ~~卡饭论坛~~ | ~~自写~~ | ~~ 签到获取积分（1000积分才能账号登录 ~~ |
+| 香水时代 | 自写 | 签到获取经验
 | [雨晨ios资源网站](https://yuchen.tonghuaios.com/) | 修改自[superHao2000/autoCheck](https://github.com/superHao2000/autoCheck) | 签到获取积分，兑换ios应用下载
 | 花夏数娱 | 修改自[MCdasheng/QuantumultX](https://github.com/MCdasheng/QuantumultX) | 签到获取积分，兑换ios应用下载 |
 | 科研通签到 | [chenlunTian/ablesciSign](https://github.com/chenlunTian/ablesciSign) | 签到获取积分，用于悬赏论文或书籍 |
