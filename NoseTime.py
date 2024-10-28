@@ -82,7 +82,7 @@ def sign_in():
                 print(points_message)
                 
                 # 发送通知
-                send(title="签到结果", content=f"{sign_in_message}\n{points_message}")
+                send(title="香水时代", content=f"{sign_in_message}\n{points_message}")
             else:
                 print(f"积分增加请求失败，状态码: {second_response.status_code}, 响应内容: {second_response.text}")
         
