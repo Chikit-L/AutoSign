@@ -17,8 +17,8 @@
 | 花夏数娱 | 修改自[MCdasheng/QuantumultX](https://github.com/MCdasheng/QuantumultX) | 签到获取积分，兑换ios应用下载 |
 | 科研通签到 | [chenlunTian/ablesciSign](https://github.com/chenlunTian/ablesciSign) | 签到获取积分，用于悬赏论文或书籍 |
 | 夸克签到 | [BNDou/Auto\_Check\_In](https://github.com/BNDou/Auto_Check_In) | 获取夸克网盘容量 | 
-| follow签到 | [AKA-Cigma/QLscripts](https://github.com/AKA-Cigma/QLscripts) | 签到获取铸币,用于打赏~~或邀请~~ |
 | wps签到 | [wf021325/qx](https://github.com/wf021325/qx) | pc端签到领取兑换vip时间 | 
 | 京东价保 | [6dylan6/jdpro](https://github.com/6dylan6/jdpro) | 京东价保 | 
 | 京东带图评价 | [6dylan6/jdpro](https://github.com/6dylan6/jdpro) | 京东评价自动化 |
+| IKuuu | 修改自Linuxdo@stopwatch3186 | ikuuu签到 |
 
