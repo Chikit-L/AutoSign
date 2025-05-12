@@ -11,25 +11,82 @@ import re
 import random
 import time
 from typing import Optional, Dict, Any, List, Iterator
+from cachetools import cached, TTLCache
+import datetime
 
 
 def get_headers(cookie: str) -> Dict[str, str]:
-    return {
+    # 动态生成最新浏览器UA
+    def generate_user_agent(platform: str) -> str:
+        # 生成随机版本号（主版本从120到125，保持更新）
+        major_version = random.randint(120, 125)
+        minor_version = random.randint(0, 10)
+        build_version = random.randint(2000, 9999)
+        
+        # 桌面端UA模板
+        desktop_templates = [
+            f'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{major_version}.0.{minor_version}.{build_version} Safari/537.36',
+            f'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:{major_version}.0) Gecko/20100101 Firefox/{major_version}.0',
+            f'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{major_version}.0.0.0 Safari/537.36 Edg/{major_version}.0.{minor_version}.{build_version}'
+        ]
+        
+        # 移动端UA模板
+        mobile_templates = [
+            f'Mozilla/5.0 (iPhone; CPU iPhone OS 17_{random.randint(1,5)} like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Mobile/15E148 Safari/604.1',
+            f'Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{major_version}.0.0.0 Mobile Safari/537.36'
+        ]
+        
+        # 根据平台选择模板
+        if platform == 'desktop':
+            return random.choice(desktop_templates)
+        return random.choice(mobile_templates)
+    
+    # 随机选择平台类型
+    is_mobile = random.choice([True, False])
+    user_agent = generate_user_agent('mobile' if is_mobile else 'desktop')
+    
+    # 带异常处理的版本提取
+    try:
+        chrome_match = re.search(r'Chrome/(\d+\.\d+\.\d+\.\d+)', user_agent)
+        chrome_version = chrome_match.group(1) if chrome_match else '125.0.0.0'
+        # 同步Edge版本处理
+        edge_match = re.search(r'Edg/(\d+\.\d+\.\d+\.\d+)', user_agent)
+        edge_version = edge_match.group(1) if edge_match else f'{chrome_version.split(".")[0]}.0.0.0'
+    except Exception as e:
+        print(f"Chrome版本提取失败: {str(e)}")
+        chrome_version = '125.0.0.0'
+    
+    edge_version = chrome_version.split('.')[0] + '.0.0.0'  # 统一使用Chrome主版本
+    
+    # 生成随机XFF头
+    x_forwarded_for = f'{random.randint(60, 220)}.{random.randint(1, 255)}.{random.randint(1, 255)}.{random.randint(1, 255)}'
+    
+    headers = {
+        'authority': 'www.ablesci.com',
         'accept': 'application/json, text/javascript, */*; q=0.01',
         'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
+        'cache-control': 'no-cache',
         'cookie': cookie,
-        'dnt': '1',
-        'priority': 'u=1, i',
+        'dnt': str(random.randint(0, 1)),  # 随机DNT标识
+        'pragma': 'no-cache',
         'referer': 'https://www.ablesci.com/',
-        'sec-ch-ua': '"Chromium";v="124", "Microsoft Edge";v="124", "Not-A.Brand";v="99"',
+        'sec-ch-ua': f'"Chromium";v="{chrome_version.split(".")[0]}", "Microsoft Edge";v="{edge_version.split(".")[0]}", "Not-A.Brand";v="99"',
         'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Windows"',
+        'sec-ch-ua-platform': '["Windows", "Linux", "macOS"][random.randint(0,2)]',
         'sec-fetch-dest': 'empty',
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-origin',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0',
+        'user-agent': user_agent,
         'x-requested-with': 'XMLHttpRequest',
+        'x-forwarded-for': x_forwarded_for,
+        'x-real-ip': x_forwarded_for
     }
+    
+    # 随机化headers顺序
+    keys = list(headers.keys())
+    random.shuffle(keys)
+    
+    return {k: headers[k] for k in keys}
 
 
 def create_session(retries: int = 3) -> requests.Session:
@@ -109,6 +166,42 @@ def cookies() -> Iterator[str]:
             yield match.group(2).strip() if match.group(2) else match.group(1).strip()
         else:
             logging.warning(f"Invalid cookie format: {entry}")
+
+
+def generate_interval(base: float = 60.0) -> float:
+    return random.uniform(0, base)
+
+
+# 缓存配置（1小时更新）
+ua_cache = TTLCache(maxsize=100, ttl=3600)
+
+@cached(ua_cache)
+def generate_user_agent(platform: str) -> str:
+    # 生成随机版本号（主版本从120到最新）
+    current_year = datetime.datetime.now().year
+    major_version = random.randint(120, current_year - 2010 + 120)
+    # 增加Firefox和Edge版本生成
+    browser_type = random.choice(['chrome', 'firefox', 'edge'])
+    
+    # 动态模板库
+    templates = {
+        'desktop': {
+            'chrome': f'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{major_version}.0.0.0 Safari/537.36',
+            'firefox': f'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:{major_version}.0) Gecko/20100101 Firefox/{major_version}.0',
+            'edge': f'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{major_version}.0.0.0 Safari/537.36 Edg/{major_version}.0.0.0'
+        },
+        'mobile': {
+            'chrome': f'Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{major_version}.0.0.0 Mobile Safari/537.36',
+            'firefox': f'Mozilla/5.0 (Android 13; Mobile; rv:{major_version}.0) Gecko/{major_version}.0 Firefox/{major_version}.0',
+            'edge': f'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{major_version}.0.0.0 Mobile Safari/537.36 EdgA/{major_version}.0.0.0'
+        }
+    }
+    
+    try:
+        return templates[platform][browser_type]
+    except Exception as e:
+        print(f"UA生成失败: {str(e)}")
+        return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
 
 
 def generate_interval(base: float = 60.0) -> float:
