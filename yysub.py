@@ -8,7 +8,7 @@ import time
 from notify import send  # 导入通知函数
 
 # 请求用户信息的URL
-url = "https://www.yysub.cc/user/login/getCurUserTopInfo"
+url = "https://www.yysub.vip/user/login/getCurUserTopInfo"
 
 # 获取环境变量中的 cookie
 def get_cookie():
