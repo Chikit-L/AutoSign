@@ -172,13 +172,7 @@ jobs:
               {"local_path": "Quark/Quark.py", "remote_url": "https://raw.githubusercontent.com/BNDou/Auto_Check_In/main/checkIn_Quark.py"},
               {"local_path": "Quark/utils", "remote_url": "https://github.com/BNDou/Auto_Check_In/tree/main/utils"},
               {"local_path": "wps.js", "remote_url": "https://raw.githubusercontent.com/wf021325/qx/main/task/wps.js"},
-              {"local_path": "jingdong/jd_OnceApply.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/main/jd_OnceApply.js"},
-              {"local_path": "jingdong/jd_AutoEval.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/main/jd_AutoEval.js"},
-              {"local_path": "jingdong/jdCookie.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/main/jdCookie.js"},
-              {"local_path": "jingdong/function/dylano.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/main/function/dylano.js"},
-              {"local_path": "jingdong/function/dylanx.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/main/function/dylanx.js"},
-              {"local_path": "jingdong/USER_AGENTS.js", "remote_url": "https://raw.githubusercontent.com/6dylan6/jdpro/main/USER_AGENTS.js"},
-              {"local_path": "nodeseek.py", "remote_url": "https://raw.githubusercontent.com/wh1te3zzz/checkin/refs/heads/main/nodeseek.py.py"},
+              {"local_path": "nodeseek.py", "remote_url": "https://raw.githubusercontent.com/wh1te3zzz/checkin/refs/heads/main/nodeseek.py"},
             {"local_path": "nodeloc.py", "remote_url": "https://raw.githubusercontent.com/wh1te3zzz/checkin/refs/heads/main/nodeloc.py"},  
           ]
           
