@@ -15,6 +15,7 @@ const $ = new Env("NodeLoc签到");
 import os
 import re
 import requests
+from notify import send
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, wait
 
@@ -39,6 +40,7 @@ else:
     print('无NLCookie变量')
 
 URL = "https://nodeloc.cc/checkin"
+results = []  # 用于存储签到结果
 
 def sign_in(account):
     ck = account["cookie"]
@@ -71,29 +73,46 @@ def sign_in(account):
                 result = response.json()
                 if result.get("success"):
                     points = result.get('points', '未知')
-                    print(f"[✅] {username} 签到成功！获得{points}能量！")
+                    msg = f"[✅] {username} 签到成功！获得{points}能量！"
+                    print(msg)
                 else:
                     message = result.get("message", "未知错误")
-                    print(f"[✅] {username} 签到成功！{message}！")
-                #print(f"[✅] {username} 签到成功！返回结果：{result}")
+                    msg = f"[✅] {username} 签到成功！{message}！"
+                    print(msg)
+                results.append(msg)
             except requests.exceptions.JSONDecodeError:
-                print(f"[⚠️] {username} 签到成功但响应不是 JSON 格式。")
+                msg = f"[⚠️] {username} 签到成功但响应不是 JSON 格式。"
+                results.append(msg)
+                print(msg)
                 print(response.text[:200])
         else:
-            print(f"[❌] 签到失败，状态码：{response.status_code}")
+            msg = f"[❌] 签到失败，状态码：{response.status_code}"
+            results.append(msg)
+            print(msg)
             print(response.text[:200])
     except Exception as e:
-        print(f"[🔥] 请求过程中出错：{e}")
+        msg = f'[🔥] 请求过程中出错：{e}'
+        results.append(msg)
+        print(msg)
 
 def main():
+    global results
     print("开始批量签到...")
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = [executor.submit(sign_in, account) for account in NLCookie]
         wait(futures)
     print("全部签到完成")
+    # 拼接通知内容
+    if results:
+        all_content = "\n".join(results)
+        send(title="NodeLoc 签到", content=all_content)
+    else:
+        send(title="NodeLoc 签到", content="未检测到签到结果，请检查配置。")
 
 if __name__ == '__main__':
     try:
         main()
     except Exception as e:
-        print(f'[ERROR] 主程序运行时出现错误: {e}')
+        error_msg = f'[ERROR] 主程序运行时出现错误: {e}'
+        print(error_msg)
+        send(title="NodeLoc 签到异常", content=error_msg)
