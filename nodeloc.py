@@ -19,6 +19,10 @@ from notify import send
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, wait
 
+# ================== 手动配置区域 ==================
+DOMAIN = "www.nodeloc.com"  # ✅ 请在此处选择你要签到的域名，可选: www.nodeloc.com 或 nodeloc.cc
+# ==============================================
+
 # 分割变量：解析 NLCookie 环境变量
 if 'NL_COOKIE' in os.environ:
     lines = os.environ.get("NL_COOKIE").strip().split("\n")
@@ -31,7 +35,7 @@ if 'NL_COOKIE' in os.environ:
                 "cookie": cookie,
                 "x-csrf-token": token
             })
-    print(f'查找到{len(NLCookie)}个账号')
+    print(f'查找到{len(NLCookie)}个账号，目标域名: {DOMAIN}')
 else:
     NLCookie = [{
         "cookie": "",
@@ -39,12 +43,14 @@ else:
     }]
     print('无NLCookie变量')
 
-URL = "https://nodeloc.cc/checkin"
 results = []  # 用于存储签到结果
 
 def sign_in(account):
     ck = account["cookie"]
     token = account["x-csrf-token"]
+
+    URL = f"https://{DOMAIN}/checkin"
+    REFERER = f"https://{DOMAIN}/"
 
     headers = {
         "accept": "*/*",
@@ -61,7 +67,7 @@ def sign_in(account):
         "x-csrf-token": token,
         "x-requested-with": "XMLHttpRequest",
         "cookie": ck,
-        "Referer": "https://nodeloc.cc/",
+        "Referer": REFERER,
         "Referrer-Policy": "strict-origin-when-cross-origin"
     }
 
@@ -74,13 +80,12 @@ def sign_in(account):
                 if result.get("success"):
                     points = result.get('points', '未知')
                     msg = f"[✅] {username} 签到成功！获得{points}能量！"
-                    print(msg)
                 else:
                     message = result.get("message", "未知错误")
                     msg = f"[✅] {username} 签到成功！{message}！"
-                    print(msg)
+                print(msg)
                 results.append(msg)
-            except requests.exceptions.JSONDecodeError:
+            except (ValueError, Exception): 
                 msg = f"[⚠️] {username} 签到成功但响应不是 JSON 格式。"
                 results.append(msg)
                 print(msg)
@@ -115,4 +120,4 @@ if __name__ == '__main__':
     except Exception as e:
         error_msg = f'[ERROR] 主程序运行时出现错误: {e}'
         print(error_msg)
-        send(title="NodeLoc 签到异常", content=error_msg)
+        #send(title="NodeLoc 签到异常", content=error_msg)
