@@ -1,8 +1,8 @@
 # -*- coding:utf-8 -*-
 # -------------------------------
-# @Author : github@wh1te3zzz https://github.com/wh1te3zzz/checkin
-# @Time : 2025-05-22 10:06:56
-# NodeLoc签到脚本
+# @Author : github@wh1te3zzz
+# @Time   : 2025-09-01
+# NodeLoc 签到脚本
 # -------------------------------
 """
 NodeLoc签到
@@ -13,111 +13,235 @@ cron: 59 8 * * *
 const $ = new Env("NodeLoc签到");
 """
 import os
-import re
-import requests
-from notify import send
+import time
+import logging
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor, wait
+import undetected_chromedriver as uc
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
 
-# ================== 手动配置区域 ==================
-DOMAIN = "www.nodeloc.com"  # ✅ 请在此处选择你要签到的域名，可选: www.nodeloc.com 或 nodeloc.cc
-# ==============================================
+# ==================== 固定配置 ====================
+DOMAIN = "www.nodeloc.com"
+HOME_URL = f"https://{DOMAIN}/u/"  # 用户列表页
+CHECKIN_BUTTON_SELECTOR = 'li.header-dropdown-toggle.checkin-icon button.checkin-button'
+USERNAME_SELECTOR = 'div.directory-table__row.me a[data-user-card]'  # 当前登录用户
+SCREENSHOT_DIR = "/ql/data/photo"
+LOG_LEVEL = logging.INFO
+# =================================================
+os.makedirs(SCREENSHOT_DIR, exist_ok=True)
 
-# 分割变量：解析 NLCookie 环境变量
-if 'NL_COOKIE' in os.environ:
-    lines = os.environ.get("NL_COOKIE").strip().split("\n")
-    NLCookie = []
-    for line in lines:
-        parts = line.strip().split("#", 1)  # 最多分割一次
-        if len(parts) == 2:
-            cookie, token = parts
-            NLCookie.append({
-                "cookie": cookie,
-                "x-csrf-token": token
-            })
-    print(f'查找到{len(NLCookie)}个账号，目标域名: {DOMAIN}')
-else:
-    NLCookie = [{
-        "cookie": "",
-        "x-csrf-token": ""
-    }]
-    print('无NLCookie变量')
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+log = logging.getLogger(__name__)
 
-results = []  # 用于存储签到结果
+results = []
 
-def sign_in(account):
-    ck = account["cookie"]
-    token = account["x-csrf-token"]
+def generate_screenshot_path(prefix: str) -> str:
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    return os.path.join(SCREENSHOT_DIR, f"{prefix}_{ts}.png")
 
-    URL = f"https://{DOMAIN}/checkin"
-    REFERER = f"https://{DOMAIN}/"
-
-    headers = {
-        "accept": "*/*",
-        "accept-language": "zh-CN,zh;q=0.9",
-        "discourse-logged-in": "true",
-        "discourse-present": "true",
-        "priority": "u=1, i",
-        "sec-ch-ua": '"Chromium";v="136", "Google Chrome";v="136", "Not.A/Brand";v="99"',
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": '"Windows"',
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-origin",
-        "x-csrf-token": token,
-        "x-requested-with": "XMLHttpRequest",
-        "cookie": ck,
-        "Referer": REFERER,
-        "Referrer-Policy": "strict-origin-when-cross-origin"
-    }
-
+def get_username_from_user_page(driver) -> str:
+    log.debug("🔍 正在提取用户名...")
     try:
-        response = requests.post(URL, headers=headers, timeout=30)
-        if response.status_code == 200:
-            username = response.headers.get('x-discourse-username', '未知用户')
-            try:
-                result = response.json()
-                if result.get("success"):
-                    points = result.get('points', '未知')
-                    msg = f"[✅] {username} 签到成功！获得{points}能量！"
-                else:
-                    message = result.get("message", "未知错误")
-                    msg = f"[✅] {username} 签到成功！{message}！"
-                print(msg)
-                results.append(msg)
-            except (ValueError, Exception): 
-                msg = f"[⚠️] {username} 签到成功但响应不是 JSON 格式。"
-                results.append(msg)
-                print(msg)
-                print(response.text[:200])
-        else:
-            msg = f"[❌] 签到失败，状态码：{response.status_code}"
-            results.append(msg)
-            print(msg)
-            print(response.text[:200])
+        element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, USERNAME_SELECTOR))
+        )
+        username = element.get_attribute("data-user-card")
+        return username.strip() if username else "未知用户"
     except Exception as e:
-        msg = f'[🔥] 请求过程中出错：{e}'
-        results.append(msg)
-        print(msg)
+        log.error(f"❌ 提取用户名失败: {e}")
+        return "未知用户"
+
+def check_login_status(driver):
+    log.debug("🔐 正在检测登录状态...")
+    try:
+        WebDriverWait(driver, 10).until(
+            EC.any_of(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "div.directory-table__row.me")),
+                EC.presence_of_element_located((By.CSS_SELECTOR, "button.checkin-button"))
+            )
+        )
+        log.info("✅ 登录成功")
+        return True
+    except Exception as e:
+        log.error(f"❌ 登录失败或 Cookie 无效: {e}")
+        screenshot_path = generate_screenshot_path('login_failed')
+        driver.save_screenshot(screenshot_path)
+        log.info(f"📸 已保存登录失败截图：{screenshot_path}")
+        return False
+
+def setup_browser():
+    options = uc.ChromeOptions()
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--disable-gpu')
+    options.add_argument('--window-size=1920,1080')
+    options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0 Safari/537.36')
+    options.add_argument('--disable-blink-features=AutomationControlled')
+    options.add_argument('--disable-extensions')
+    options.add_argument('--disable-infobars')
+    options.add_argument('--disable-popup-blocking')
+    options.add_argument('--headless=new')
+    log.debug("🌐 启动 Chrome（无头模式）...")
+    try:
+        driver = uc.Chrome(
+            options=options,
+            driver_executable_path='/usr/bin/chromedriver',
+            version_main=138,
+            use_subprocess=True
+        )
+        driver.set_window_size(1920, 1080)
+        driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => false});")
+        driver.execute_script("window.chrome = { runtime: {} };")
+        driver.execute_script("Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3]});")
+        driver.execute_script("Object.defineProperty(navigator, 'languages', {get: () => ['zh-CN', 'zh']});")
+
+        return driver
+    except Exception as e:
+        log.error(f"❌ 浏览器启动失败: {e}")
+        return None
+
+def hover_checkin_button(driver):
+    try:
+        wait = WebDriverWait(driver, 10)
+        button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, CHECKIN_BUTTON_SELECTOR)))
+        ActionChains(driver).move_to_element(button).perform()
+        time.sleep(1)
+    except Exception as e:
+        log.warning(f"⚠️ 刷新签到状态失败: {e}")
+
+def perform_checkin(driver, username: str):
+    try:
+        driver.get("https://www.nodeloc.com/")
+        time.sleep(3)
+        hover_checkin_button(driver)
+        wait = WebDriverWait(driver, 10)
+        button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, CHECKIN_BUTTON_SELECTOR)))
+
+        if "checked-in" in button.get_attribute("class"):
+            msg = f"[✅] {username} 今日已签到"
+            log.info(msg)
+            return msg
+
+        log.info(f"📌 {username} - 准备签到")
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", button)
+        time.sleep(1)
+        driver.execute_script("arguments[0].click();", button)
+        time.sleep(3)
+
+        hover_checkin_button(driver)
+
+        if "checked-in" in button.get_attribute("class"):
+            msg = f"[🎉] {username} 签到成功！"
+            log.info(msg)
+            return msg
+        else:
+            msg = f"[⚠️] {username} 点击后状态未更新，可能失败"
+            log.warning(msg)
+            path = generate_screenshot_path("checkin_uncertain")
+            driver.save_screenshot(path)
+            log.info(f"📸 已保存状态存疑截图：{path}")
+            return msg
+
+    except Exception as e:
+        msg = f"[❌] {username} 签到异常: {e}"
+        log.error(msg)
+        path = generate_screenshot_path("checkin_error")
+        try:
+            driver.save_screenshot(path)
+            log.info(f"📸 已保存错误截图：{path}")
+        except:
+            pass
+        return msg
+
+def process_account(cookie_str: str):
+    cookie = cookie_str.split("#", 1)[0].strip()
+    if not cookie:
+        log.error("❌ Cookie 为空")
+        return "[❌] Cookie 为空"
+
+    driver = None
+    try:
+        driver = setup_browser()
+        if not driver:
+            return "[❌] 浏览器启动失败"
+
+        log.info("🚀 正在打开用户列表页...")
+        driver.get(HOME_URL)
+        time.sleep(3)
+
+        log.debug("🍪 正在设置 Cookie...")
+        for item in cookie.split(";"):
+            item = item.strip()
+            if not item or "=" not in item:
+                continue
+            try:
+                name, value = item.split("=", 1)
+                driver.add_cookie({
+                    'name': name.strip(),
+                    'value': value.strip(),
+                    'domain': '.nodeloc.com',
+                    'path': '/',
+                    'secure': True,
+                    'httpOnly': False
+                })
+            except Exception as e:
+                log.warning(f"[⚠️] 添加 Cookie 失败: {item} -> {e}")
+                continue
+
+        driver.refresh()
+        time.sleep(5)
+
+        if not check_login_status(driver):
+            return "[❌] 登录失败，Cookie 可能失效"
+
+        username = get_username_from_user_page(driver)
+        log.info(f"👤 当前用户: {username}")
+
+        result = perform_checkin(driver, username)
+        return result
+
+    except Exception as e:
+        msg = f"[🔥] 处理异常: {e}"
+        log.error(msg)
+        return msg
+    finally:
+        if driver:
+            try:
+                driver.quit()
+            except:
+                pass
 
 def main():
     global results
-    print("开始批量签到...")
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = [executor.submit(sign_in, account) for account in NLCookie]
-        wait(futures)
-    print("全部签到完成")
-    # 拼接通知内容
-    if results:
-        all_content = "\n".join(results)
-        send(title="NodeLoc 签到", content=all_content)
-    else:
-        send(title="NodeLoc 签到", content="未检测到签到结果，请检查配置。")
+    if 'NL_COOKIE' not in os.environ:
+        msg = "❌ 未设置 NL_COOKIE 环境变量"
+        print(msg)
+        results.append(msg)
+        return
+
+    raw_lines = os.environ.get("NL_COOKIE").strip().split("\n")
+    cookies = [line.strip() for line in raw_lines if line.strip()]
+
+    if not cookies:
+        msg = "❌ 未解析到有效 Cookie"
+        print(msg)
+        results.append(msg)
+        return
+
+    log.info(f"✅ 查找到 {len(cookies)} 个账号，开始顺序签到...")
+
+    for cookie_str in cookies:
+        result = process_account(cookie_str)
+        results.append(result)
+        time.sleep(5)
+
+    log.info("✅ 全部签到完成")
 
 if __name__ == '__main__':
-    try:
-        main()
-    except Exception as e:
-        error_msg = f'[ERROR] 主程序运行时出现错误: {e}'
-        print(error_msg)
-        #send(title="NodeLoc 签到异常", content=error_msg)
+    main()
