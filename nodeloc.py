@@ -27,7 +27,7 @@ DOMAIN = "www.nodeloc.com"
 HOME_URL = f"https://{DOMAIN}/u/"  # 用户列表页
 CHECKIN_BUTTON_SELECTOR = 'li.header-dropdown-toggle.checkin-icon button.checkin-button'
 USERNAME_SELECTOR = 'div.directory-table__row.me a[data-user-card]'  # 当前登录用户
-SCREENSHOT_DIR = "/ql/data/photo"
+SCREENSHOT_DIR = "./photo"
 LOG_LEVEL = logging.INFO
 # =================================================
 os.makedirs(SCREENSHOT_DIR, exist_ok=True)
